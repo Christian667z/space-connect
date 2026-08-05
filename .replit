@@ -8,6 +8,8 @@ channel = "stable-25_05"
 NODE_ENV = "production"
 PORT = "5000"
 SUPABASE_URL = "https://jkucbutsaivesayghhvq.supabase.co"
+GOOGLE_CLIENT_ID = "644577029504-oe8g04ksr5q811mti7cntmmbudst056i.apps.googleusercontent.com"
+SUPABASE_JWKS_URL = "https://jkucbutsaivesayghhvq.supabase.co/auth/v1/.well-known/jwks.json"
 
 [workflows]
 runButton = "Project"
