@@ -23,6 +23,7 @@
     "express": "^4.19.2",
     "express-rate-limit": "^8.6.2",
     "googleapis": "^140.0.1",
-    "helmet": "^8.3.0"
+    "helmet": "^8.3.0",
+    "ws": "^8.21.2"
   }
 }
