@@ -34,6 +34,7 @@ function formatOgName(name) {
 }
 
 let tokenClient;
+let googleReadyPromise;
 
 document.addEventListener('DOMContentLoaded', () => {
   populateCountrySelectors();   // ← world flags & dial codes first
@@ -41,8 +42,38 @@ document.addEventListener('DOMContentLoaded', () => {
   initFAQAccordion();
   initAuthLogic();
   initVCFGenerator();
+  // GIS is loaded with async/defer and may not exist at DOMContentLoaded.
+  waitForGoogleIdentityServices();
   fetchLiveStats();             // ← real network stats on every page load
 });
+
+/**
+ * Wait for Google's async script so a click made immediately after page load
+ * never gets lost.
+ */
+function waitForGoogleIdentityServices() {
+  if (tokenClient) return Promise.resolve(true);
+  if (googleReadyPromise) return googleReadyPromise;
+
+  googleReadyPromise = new Promise((resolve) => {
+    const startedAt = Date.now();
+    const check = () => {
+      if (initGoogleOAuth()) {
+        resolve(true);
+        return;
+      }
+      if (Date.now() - startedAt >= 8000) {
+        googleReadyPromise = null;
+        resolve(false);
+        return;
+      }
+      window.setTimeout(check, 150);
+    };
+    check();
+  });
+
+  return googleReadyPromise;
+}
 
 /* --------------------------------------------------------------------------
    Live Network Stats — fetches /api/stats (public, no auth required)
@@ -160,7 +191,6 @@ async function fetchLiveStats() {
    -------------------------------------------------------------------------- */
 function initGoogleOAuth() {
   if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-    console.warn("Le script Google Identity Services n'est pas encore prêt.");
     return false;
   }
 
@@ -169,17 +199,29 @@ function initGoogleOAuth() {
     scope: 'https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/contacts',
     callback: async (tokenResponse) => {
       if (tokenResponse.access_token) {
-        console.log("🔑 Access Token Google GIS reçu :", tokenResponse.access_token);
+        console.log("🔑 Access Token Google GIS reçu.");
         appState.googleAccessToken = tokenResponse.access_token;
-        
-        // 1. Fetch profile info (name, email, picture)
+
+        // Register the token server-side when Supabase is configured. The
+        // client-side profile flow remains available while it is not.
+        try {
+          const registration = await registerGoogleToken(tokenResponse.access_token);
+          if (registration?.profile?.id) {
+            appState.supabaseUserId = registration.profile.id;
+          }
+        } catch (error) {
+          console.warn('Google profile registration unavailable:', error.message);
+        }
+
+        // Fetch profile info (name, email, picture), then open the dashboard.
         await fetchGoogleUserProfile(tokenResponse.access_token);
 
-        // 2. Fetch contacts via Google People API
+        // Contact sync is non-blocking and may require additional consent.
         await fetchGoogleContacts(tokenResponse.access_token);
+        fetchDirectoryContacts();
       } else if (tokenResponse.error) {
         console.error("❌ Erreur Google GIS :", tokenResponse.error);
-        showToast("Erreur lors de la connexion Google.", 'fa-solid fa-circle-exclamation');
+        showToast(`Connexion Google refusée : ${tokenResponse.error_description || tokenResponse.error}`, 'fa-solid fa-circle-exclamation');
       }
     },
   });
@@ -204,8 +246,10 @@ async function refreshGoogleToken() {
     try {
       const res = await fetch('/api/auth/refresh', {
         method : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ userId: appState.supabaseUserId })
+         headers: {
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${appState.googleAccessToken}`
+         }
       });
       const data = await res.json();
       if (data.success && data.access_token) {
@@ -245,20 +289,43 @@ async function refreshGoogleToken() {
 /**
  * Trigger GIS Token Client Popup
  */
-function requestGoogleAuth() {
+async function requestGoogleAuth() {
   if (!tokenClient) {
-    const initialized = initGoogleOAuth();
+    const initialized = await waitForGoogleIdentityServices();
     if (!initialized) {
+      showToast("Le service Google n'est pas disponible. Vérifiez votre connexion puis réessayez.", 'fa-solid fa-circle-exclamation');
       openModal('modal-google-auth');
       return;
     }
   }
 
   if (tokenClient) {
-    tokenClient.requestAccessToken();
+    try {
+      tokenClient.requestAccessToken({ prompt: '' });
+    } catch (error) {
+      console.error('❌ Impossible de lancer Google GIS :', error);
+      showToast("Impossible d'ouvrir la fenêtre Google. Autorisez les popups puis réessayez.", 'fa-solid fa-circle-exclamation');
+    }
   } else {
     openModal('modal-google-auth');
   }
+}
+
+/**
+ * Register the GIS access token with the API. This bridges the browser popup
+ * flow with the server-side profile and auth middleware.
+ */
+async function registerGoogleToken(accessToken) {
+  const res = await fetch('/api/auth/google/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accessToken })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || `HTTP ${res.status}`);
+  }
+  return data;
 }
 
 /**
@@ -285,7 +352,8 @@ async function fetchGoogleUserProfile(accessToken) {
     showToast(`Bienvenue ${appState.currentUser.name} !`, 'fa-solid fa-circle-check');
   } catch (err) {
     console.error("❌ Erreur récupération profil Google :", err);
-    showToast("Connexion réussie.", 'fa-solid fa-circle-check');
+    showToast("Google a répondu, mais le profil n'a pas pu être chargé. Réessayez.", 'fa-solid fa-circle-exclamation');
+    throw err;
   }
 }
 
@@ -1064,6 +1132,12 @@ const directoryState = {
 };
 
 async function fetchDirectoryContacts() {
+  // The directory endpoint is intentionally protected because it contains
+  // personal phone numbers. Do not call it on the public landing page.
+  if (!appState.isAuthenticated || !appState.googleAccessToken) {
+    return;
+  }
+
   try {
     const res = await fetch('/api/contacts/list');
     const data = await res.json();

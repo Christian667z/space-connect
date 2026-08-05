@@ -1,0 +1,1 @@
+- [Node 20 and Supabase](node20-supabase.md) — keep Supabase dependencies compatible with Node 20 unless the workspace runtime is upgraded.

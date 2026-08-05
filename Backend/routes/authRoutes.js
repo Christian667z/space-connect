@@ -5,11 +5,88 @@
 
 const express = require('express');
 const router  = express.Router();
-const { getGoogleAuthUrl, buildRedirectUri, oauth2Client } = require('../config/googleAuth');
+const { getGoogleAuthUrl, buildRedirectUri, oauth2Client, GOOGLE_CLIENT_ID } = require('../config/googleAuth');
 const { exchangeCodeForTokens, getGoogleUserProfile }      = require('../services/googleContactsService');
 const supabase                                             = require('../config/supabase');
 const { encrypt, decrypt, hmac }                           = require('../utils/crypto');
 const { formatOgName }                                     = require('../utils/format');
+
+/**
+ * @route   POST /api/auth/google/token
+ * @desc    Register a token obtained by Google Identity Services (popup flow).
+ *
+ * GIS returns an access token directly in the browser, while the legacy
+ * redirect route below receives an authorization code. This endpoint connects
+ * those two flows by verifying the token and upserting the local profile.
+ */
+router.post('/google/token', async (req, res) => {
+  const accessToken = typeof req.body?.accessToken === 'string'
+    ? req.body.accessToken.trim()
+    : '';
+
+  if (!accessToken) {
+    return res.status(400).json({
+      success: false,
+      message: 'Token Google manquant.'
+    });
+  }
+
+  try {
+    const tokenRes = await fetch(
+      `https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${encodeURIComponent(accessToken)}`
+    );
+    const tokenInfo = await tokenRes.json();
+
+    if (!tokenRes.ok || tokenInfo.error || !tokenInfo.email) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token Google invalide ou expiré.'
+      });
+    }
+
+    if (tokenInfo.aud !== GOOGLE_CLIENT_ID && tokenInfo.azp !== GOOGLE_CLIENT_ID) {
+      return res.status(401).json({
+        success: false,
+        message: 'Ce token Google appartient à une autre application.'
+      });
+    }
+
+    const profileRes = await fetch(
+      'https://www.googleapis.com/oauth2/v3/userinfo',
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const googleProfile = await profileRes.json();
+    if (!profileRes.ok || !googleProfile.email) {
+      throw new Error('Impossible de récupérer le profil Google.');
+    }
+
+    const profilePayload = {
+      google_id           : googleProfile.sub || tokenInfo.sub,
+      email               : googleProfile.email,
+      full_name           : formatOgName(googleProfile.name || googleProfile.email),
+      avatar_url          : googleProfile.picture || null,
+      google_access_token : encrypt(accessToken),
+      access_token_hash   : hmac(accessToken),
+      token_expires_at    : tokenInfo.exp ? new Date(Number(tokenInfo.exp) * 1000) : null,
+      updated_at          : new Date()
+    };
+
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .upsert(profilePayload, { onConflict: 'email' })
+      .select('id, email, full_name, avatar_url')
+      .single();
+
+    if (error) throw error;
+    return res.json({ success: true, profile });
+  } catch (error) {
+    console.error('❌ GIS token registration failed:', error.message);
+    return res.status(503).json({
+      success: false,
+      message: 'Connexion Google réussie, mais la synchronisation du profil est indisponible pour le moment.'
+    });
+  }
+});
 
 /**
  * @route   GET /api/auth/google/url
