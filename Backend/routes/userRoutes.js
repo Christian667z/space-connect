@@ -11,25 +11,32 @@ const { formatOgName } = require('../utils/format');
 
 // Safe public columns — OAuth tokens are NEVER returned via the API.
 const PUBLIC_PROFILE_COLS =
-  'id, google_id, email, full_name, avatar_url, phone_number, country_code, auto_sync_enabled, created_at, updated_at';
+  'id, google_id, email, full_name, avatar_url, phone_number, country_code, auto_sync_enabled, phone_edits_remaining, created_at, updated_at';
+
+const MAX_SLOTS = 3;
 
 /**
  * @route   GET /api/user/profile
- * @desc    Get the authenticated user's own profile (userId from verified token)
+ * @desc    Get the authenticated user's own profile with real slot & edit counts.
  * @access  Authenticated (Bearer Google token required)
  */
 router.get('/profile', requireAuth, async (req, res) => {
   try {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select(PUBLIC_PROFILE_COLS)
-      .eq('id', req.user.id)   // ← derived from verified token, not user input
-      .single();
+    const userId = req.user.id;
+    const [profileRes, slotsRes] = await Promise.all([
+      supabase.from('profiles').select(PUBLIC_PROFILE_COLS).eq('id', userId).single(),
+      supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('user_id', userId)
+    ]);
 
-    if (error) throw error;
-    if (!profile) return res.status(404).json({ success: false, message: 'Profil introuvable.' });
+    if (profileRes.error) throw profileRes.error;
+    if (!profileRes.data) return res.status(404).json({ success: false, message: 'Profil introuvable.' });
 
-    res.json({ success: true, profile });
+    const profile       = profileRes.data;
+    const slotsUsed     = slotsRes.count ?? 0;
+    // phone_edits_remaining may be null if migration hasn't run yet — default to 2
+    const editsRemaining = profile.phone_edits_remaining ?? 2;
+
+    res.json({ success: true, profile, slotsUsed, maxSlots: MAX_SLOTS, editsRemaining });
   } catch (error) {
     console.error('❌ Profile fetch error:', error.message);
     res.status(500).json({ success: false, message: 'Impossible de récupérer le profil.' });
@@ -62,24 +69,43 @@ router.post('/phone', requireAuth, async (req, res) => {
 
     const { data: existingProfile } = await supabase
       .from('profiles')
-      .select('full_name')
+      .select('full_name, phone_edits_remaining')
       .eq('id', userId)
       .single();
+
+    // Guard: block save if no edits remaining (null means migration not run → allow)
+    const currentEdits = existingProfile?.phone_edits_remaining;
+    if (currentEdits !== null && currentEdits !== undefined && currentEdits <= 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'Vous avez atteint la limite de modifications (2/2). Contactez le support pour plus d\'options.'
+      });
+    }
 
     const rawName       = fullName || (existingProfile?.full_name) || 'Membre Space';
     const formattedName = formatOgName(rawName);
     const safeCode      = (countryCode || '+509').trim();
     const safePhone     = phoneNumber.trim();
 
+    // Compute new edits remaining (decrement, floor at 0, skip if column not yet migrated)
+    const newEditsRemaining = currentEdits !== null && currentEdits !== undefined
+      ? Math.max(0, currentEdits - 1)
+      : undefined;
+
     // 1. Update the user's own profile row.
+    const updatePayload = {
+      full_name    : formattedName,
+      country_code : safeCode,
+      phone_number : safePhone,
+      updated_at   : new Date()
+    };
+    if (newEditsRemaining !== undefined) {
+      updatePayload.phone_edits_remaining = newEditsRemaining;
+    }
+
     const { data: profile, error: profileErr } = await supabase
       .from('profiles')
-      .update({
-        full_name    : formattedName,
-        country_code : safeCode,
-        phone_number : safePhone,
-        updated_at   : new Date()
-      })
+      .update(updatePayload)
       .eq('id', userId)
       .select(PUBLIC_PROFILE_COLS)
       .single();
@@ -125,10 +151,19 @@ router.post('/phone', requireAuth, async (req, res) => {
       if (contactErr) throw contactErr;
     }
 
+    // Count slots used after the save
+    const { count: slotsUsed } = await supabase
+      .from('contacts')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
     res.json({
-      success : true,
-      message : 'Numéro WhatsApp enregistré dans Space Connect !',
-      profile
+      success       : true,
+      message       : 'Numéro WhatsApp enregistré dans Space Connect !',
+      profile,
+      slotsUsed     : slotsUsed ?? 1,
+      maxSlots      : MAX_SLOTS,
+      editsRemaining: profile?.phone_edits_remaining ?? newEditsRemaining ?? 2
     });
   } catch (error) {
     console.error('❌ Error saving phone number:', error.message);

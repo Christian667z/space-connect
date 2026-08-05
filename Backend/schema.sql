@@ -20,9 +20,13 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     -- without decrypting all rows. Not reversible.
     access_token_hash TEXT,
     token_expires_at TIMESTAMPTZ,
+    phone_edits_remaining INT DEFAULT 2,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration (run this if the table already exists):
+-- ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone_edits_remaining INT DEFAULT 2;
 
 -- Migration: if upgrading from an earlier version of this schema, run:
 -- ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS access_token_hash TEXT;

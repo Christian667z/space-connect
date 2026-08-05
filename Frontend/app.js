@@ -329,6 +329,67 @@ async function registerGoogleToken(accessToken) {
 }
 
 /**
+ * Fetch and display the authenticated user's real dashboard stats
+ * (contact slots used, edits remaining, stored phone number).
+ * Called after login and after a successful phone save.
+ */
+async function fetchUserDashboardStats(token) {
+  try {
+    const res  = await fetch('/api/user/profile', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.success) return;
+
+    const slotsUsed      = data.slotsUsed      ?? 0;
+    const maxSlots       = data.maxSlots        ?? 3;
+    const editsRemaining = data.editsRemaining  ?? 2;
+    const profile        = data.profile         ?? {};
+
+    // Update slot / edit counters in the trio-grid
+    const elSlots = document.getElementById('stat-slots-used');
+    const elEdits = document.getElementById('stat-edits-remaining');
+    if (elSlots) elSlots.textContent = `${slotsUsed}/${maxSlots} emplacements`;
+    if (elEdits) {
+      elEdits.textContent = `${editsRemaining}/2 restantes`;
+      // Red tint when 0 edits left
+      elEdits.style.color = editsRemaining <= 0 ? 'var(--accent-red-bright)' : '';
+    }
+
+    // Pre-fill the phone form with stored values
+    const storedPhone = profile.phone_number;
+    const storedCode  = profile.country_code;
+    if (storedPhone) {
+      const phoneInput = document.getElementById('input-phone-number');
+      const codeSelect = document.getElementById('select-country-code');
+      if (phoneInput && !phoneInput.value) phoneInput.value = storedPhone;
+      if (codeSelect && storedCode)        codeSelect.value = storedCode;
+    }
+
+    // Update slot card preview
+    if (profile.full_name) {
+      const slotName  = document.getElementById('slot-card-name');
+      const slotPhone = document.getElementById('slot-card-phone');
+      if (slotName && profile.full_name)  slotName.textContent  = profile.full_name;
+      if (slotPhone && storedPhone)       slotPhone.textContent = `${profile.country_code ?? ''} ${storedPhone}`;
+    }
+
+    // Disable the save button if no edits left
+    const saveBtn = document.getElementById('btn-save-phone-sync');
+    if (saveBtn && editsRemaining <= 0) {
+      saveBtn.disabled = true;
+      saveBtn.title = 'Limite de modifications atteinte';
+    } else if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.title = '';
+    }
+  } catch (err) {
+    console.warn('⚠️ fetchUserDashboardStats:', err.message);
+  }
+}
+
+/**
  * Fetch Google User Profile (Name, Email, Avatar)
  */
 async function fetchGoogleUserProfile(accessToken) {
@@ -350,6 +411,9 @@ async function fetchGoogleUserProfile(accessToken) {
     updateAuthUI();
     switchView('dashboard');
     showToast(`Bienvenue ${appState.currentUser.name} !`, 'fa-solid fa-circle-check');
+
+    // Load real slot / edit counts from backend right after login
+    fetchUserDashboardStats(accessToken);
   } catch (err) {
     console.error("❌ Erreur récupération profil Google :", err);
     showToast("Google a répondu, mais le profil n'a pas pu être chargé. Réessayez.", 'fa-solid fa-circle-exclamation');
@@ -514,6 +578,21 @@ function initAuthLogic() {
           // Store Supabase userId for future server-side token refreshes
           if (data.profile?.id) appState.supabaseUserId = data.profile.id;
           showToast(`Fiche enregistrée : ${formattedName} (${code} ${num})`, 'fa-solid fa-check');
+          // Refresh real slot / edit counts after save
+          const elSlots = document.getElementById('stat-slots-used');
+          const elEdits = document.getElementById('stat-edits-remaining');
+          if (elSlots && data.slotsUsed !== undefined)
+            elSlots.textContent = `${data.slotsUsed}/${data.maxSlots ?? 3} emplacements`;
+          if (elEdits && data.editsRemaining !== undefined) {
+            elEdits.textContent = `${data.editsRemaining}/2 restantes`;
+            elEdits.style.color = data.editsRemaining <= 0 ? 'var(--accent-red-bright)' : '';
+          }
+          // Disable save button if no edits left
+          const saveBtn = document.getElementById('btn-save-phone-sync');
+          if (saveBtn) {
+            saveBtn.disabled = data.editsRemaining <= 0;
+            saveBtn.title    = data.editsRemaining <= 0 ? 'Limite de modifications atteinte' : '';
+          }
         } else {
           showToast(data.message || 'Erreur lors de la sauvegarde.', 'fa-solid fa-circle-exclamation');
         }
