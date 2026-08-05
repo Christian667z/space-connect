@@ -7,4 +7,4 @@ The workspace currently runs Node.js 20. Recent Supabase JavaScript releases can
 
 **Why:** The backend imports Supabase at startup, so an incompatible package fails the entire web workflow before any route can respond.
 
-**How to apply:** Keep the backend dependency set on a Node 20-compatible Supabase release, or upgrade the workspace runtime to Node 22 before upgrading Supabase.
+**How to apply:** Install the `ws` npm package in the backend and configure the Supabase client with `{ realtime: { transport: { WebSocket: require('ws') } } }`. This is confirmed working with supabase-js 2.112+ on Node 20. Alternatively upgrade the workspace runtime to Node 22.

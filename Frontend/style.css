@@ -2681,3 +2681,172 @@ img, svg, canvas, video {
     padding: 1rem 0.75rem;
   }
 }
+
+/* ==========================================================================
+   DIRECTORY FILTER ROW — responsive search + dropdowns
+   ========================================================================== */
+.dir-filter-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.dir-search-wrap {
+  flex: 1;
+  min-width: 220px;
+  position: relative;
+}
+
+.dir-filter-wrap {
+  min-width: 150px;
+}
+
+@media (max-width: 640px) {
+  .dir-search-wrap {
+    min-width: 0;
+    width: 100%;
+    flex: none;
+  }
+  .dir-filter-wrap {
+    flex: 1;
+    min-width: 130px;
+  }
+  .dir-filter-row {
+    gap: 0.6rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .dir-filter-wrap {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
+/* ==========================================================================
+   DIRECTORY ACTION TOOLBAR — wrap on mobile
+   ========================================================================== */
+@media (max-width: 540px) {
+  .dir-action-toolbar {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+  .dir-action-toolbar > div {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .dir-action-toolbar .btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* ==========================================================================
+   ACCOUNT INFO ROW — prevent email overflow on small phones
+   ========================================================================== */
+.account-info-row {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.account-info-row strong {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+/* ==========================================================================
+   SYNC TOGGLE BOX — wrap toggle to next line on tiny screens
+   ========================================================================== */
+.sync-toggle-box {
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .sync-toggle-box > div:first-child {
+    flex: 1;
+    min-width: 0;
+  }
+  .sync-toggle-box .switch-toggle {
+    flex-shrink: 0;
+  }
+}
+
+/* ==========================================================================
+   TABLET (768–1024px) REFINEMENTS
+   ========================================================================== */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .space-hero-hub {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+  .space-hero-hub > *:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  .features-trio-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .steps-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dash-sidebar {
+    width: 100%;
+  }
+
+  .stats-quad-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ==========================================================================
+   PREVENT FLOATING CAPSULES FROM CAUSING HORIZONTAL SCROLL ON MOBILE
+   ========================================================================== */
+@media (max-width: 768px) {
+  .hero-capsules-wrapper,
+  #floating-container {
+    overflow: hidden;
+  }
+  .floating-capsule {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   DASHBOARD INNER CARDS — avoid overflow on small phones
+   ========================================================================== */
+@media (max-width: 480px) {
+  .dash-header-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .quick-actions-bar {
+    padding-bottom: 0.75rem;
+  }
+  .quick-action-btn {
+    font-size: 0.775rem;
+    padding: 0.55rem 0.9rem;
+  }
+  .onboarding-card {
+    padding: 1.25rem 1rem;
+  }
+  .onboarding-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .chart-goal-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .svg-chart-container {
+    height: 130px;
+  }
+}

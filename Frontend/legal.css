@@ -525,8 +525,50 @@ h1, h2, h3, h4 {
   .legal-card { padding: 2rem 1.5rem; }
 }
 
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 1rem;
+    height: 64px;
+  }
+  .nav-brand { font-size: 1rem; gap: 0.4rem; }
+  .nav-brand img { width: 26px; height: 26px; }
+
+  .legal-main {
+    padding-top: calc(64px + 2rem);
+    padding-bottom: 3rem;
+  }
+  .legal-header h1 {
+    font-size: clamp(1.85rem, 7vw, 2.8rem);
+  }
+  .legal-header p {
+    font-size: 0.95rem;
+  }
+  .legal-card {
+    padding: 1.75rem 1.25rem;
+    border-radius: 20px;
+  }
+  .legal-section-item h2 {
+    font-size: 1.2rem;
+    flex-wrap: wrap;
+  }
+  .legal-callout {
+    padding: 1rem 1.1rem;
+  }
+}
+
 @media (max-width: 576px) {
   .footer-grid { grid-template-columns: 1fr; }
-  .footer-bottom-bar { flex-direction: column; text-align: center; }
-  .navbar { padding: 0 1.25rem; }
+  .footer-bottom-bar { flex-direction: column; text-align: center; gap: 0.75rem; }
+  .navbar { padding: 0 0.85rem; }
+  .legal-meta-bar {
+    gap: 0.75rem;
+    justify-content: flex-start;
+    text-align: left;
+  }
+  .legal-card { padding: 1.25rem 0.9rem; }
+  .legal-section-item { margin-bottom: 2rem; }
+}
+
+@media (max-width: 380px) {
+  .nav-brand > span { display: none; }
 }
