@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="800" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond blanc -->
+  <rect width="800" height="800" fill="#FFFFFF"/>
+  
+  <!-- Cadre carré rouge -->
+  <rect x="100" y="100" width="600" height="600" fill="none" stroke="#E50914" stroke-width="24"/>
+  
+  <!-- Monogramme vectoriel 'OG' en rouge -->
+  <g fill="#E50914">
+    <!-- Lettre 'O' -->
+    <path d="M 275 270 C 195 270 145 325 145 400 C 145 475 195 530 275 530 C 355 530 405 475 405 400 C 405 325 355 270 275 270 Z M 275 338 C 318 338 338 368 338 400 C 338 432 318 462 275 462 C 232 462 212 432 212 400 C 212 368 232 338 275 338 Z" />
+    
+    <!-- Lettre 'G' -->
+    <path d="M 525 270 C 445 270 395 325 395 400 C 495 475 445 530 525 530 C 605 530 655 475 655 400 L 520 400 L 520 455 L 588 455 C 578 472 555 475 525 475 C 482 475 462 445 462 400 C 462 355 482 325 525 325 C 558 325 580 342 588 362 L 650 345 C 632 300 588 270 525 270 Z" />
+  </g>
+</svg>
