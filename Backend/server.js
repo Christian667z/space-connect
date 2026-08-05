@@ -20,25 +20,18 @@ const contactsRoutes = require('./routes/contactsRoutes');
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
-// Replit (and most cloud hosts) sit behind a reverse proxy that sets
-// X-Forwarded-For. Trust the first hop so express-rate-limit and req.ip
-// resolve to the real client address instead of the proxy's.
+// Reverse proxy trust (pour Render, Replit, Heroku...)
 app.set('trust proxy', 1);
 
 // ── Security Headers ──────────────────────────────────────────────────────────
 if (helmet) {
   app.use(helmet({
-    contentSecurityPolicy: false,   // disabled – frontend uses inline scripts & CDN
+    contentSecurityPolicy: false,   // désactivé pour scripts inline & CDN frontend
     crossOriginEmbedderPolicy: false
   }));
 }
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
-// Frontend is served by this same Express server (same-origin), so browser
-// API calls don't need CORS at all.  We only open CORS for explicitly
-// configured external origins (e.g. a separate dev frontend or Replit preview).
-// We never reflect arbitrary origins with credentials=true to avoid exposing
-// session data to malicious third-party sites.
 const ALLOWED_ORIGINS = (() => {
   const configured = process.env.FRONTEND_URL || '';
   const replit = process.env.REPLIT_DEV_DOMAIN
@@ -48,10 +41,8 @@ const ALLOWED_ORIGINS = (() => {
 
 app.use(cors({
   origin (origin, cb) {
-    // Same-origin requests have no Origin header — always allow.
     if (!origin) return cb(null, true);
     if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-    // Unknown cross-origin — allow the request but without credentials.
     cb(null, false);
   },
   credentials: true,
@@ -74,16 +65,15 @@ app.use((req, res, next) => {
 if (rateLimit) {
   const apiLimiter = rateLimit({
     windowMs : 15 * 60 * 1000,   // 15 minutes
-    max      : 150,               // 150 requests per window per IP
+    max      : 150,
     standardHeaders: true,
     legacyHeaders  : false,
     message : { success: false, message: 'Trop de requêtes. Réessayez dans 15 minutes.' }
   });
   app.use('/api/', apiLimiter);
 
-  // Stricter limit on auth endpoints (prevent OAuth abuse)
   const authLimiter = rateLimit({
-    windowMs : 60 * 60 * 1000,   // 1 hour
+    windowMs : 60 * 60 * 1000,   // 1 heure
     max      : 30,
     message  : { success: false, message: 'Trop de tentatives d\'authentification.' }
   });
@@ -96,12 +86,11 @@ app.use('/api/user',     userRoutes);
 app.use('/api/contacts', contactsRoutes);
 
 // ── Public Stats ──────────────────────────────────────────────────────────────
-// Returns aggregate numbers only — no personal data (no phone numbers).
 app.get('/api/stats', async (req, res) => {
   const supabase = require('./config/supabase');
   try {
     const now       = new Date();
-    const todayISO  = now.toISOString().slice(0, 10);                        // YYYY-MM-DD
+    const todayISO  = now.toISOString().slice(0, 10);
     const weekAgoISO = new Date(now - 7 * 24 * 3600 * 1000).toISOString();
 
     const [countRes, recentRes, todayRes, weekRes] = await Promise.all([
@@ -151,12 +140,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ── Serve Static Frontend ─────────────────────────────────────────────────────
-const frontendPath = path.join(__dirname, '..', 'Frontend');
+// ── Distribution du Frontend (Fichiers Statiques) ────────────────────────────
+const frontendPath = path.resolve(__dirname, '../Frontend');
 app.use(express.static(frontendPath));
 
-// SPA fallback – serve index.html for any non-API path
-app.get(/.*/, (req, res) => {
+// Redirection SPA : Toutes les requêtes hors API renvoient sur index.html
+app.get('*', (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
