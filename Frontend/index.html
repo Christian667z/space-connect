@@ -13,6 +13,9 @@
     <link rel="icon" type="image/svg+xml" href="asset/svg asset/og-svg.svg">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Google Identity Services (GIS) — loaded early so it's ready before any click -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -1396,8 +1399,8 @@
         </div>
     </footer>
 
-    <!-- Official Google Identity Services (GIS) Script -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Google sign-in button receptor (used by GIS one-tap / button renderer if needed) -->
+    <div id="google-btn"></div>
 
     <!-- JavaScript Application Script -->
     <script src="app.js"></script>

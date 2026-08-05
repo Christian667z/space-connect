@@ -153,8 +153,11 @@ router.get('/google/callback', async (req, res) => {
     if (error) throw error;
 
     // 5. Redirect to Frontend with session params
+    //    The access token is passed in the URL hash (not the query string) so it
+    //    is never sent to the server in Referer headers or logged by proxies.
+    //    This enables the mobile redirect OAuth flow to get a working access token.
     const origin      = `${req.protocol}://${req.get('host')}`;
-    const redirectUrl = `${origin}?auth=success&user_id=${userProfile.id}`;
+    const redirectUrl = `${origin}?auth=success&user_id=${userProfile.id}#gat=${encodeURIComponent(tokens.access_token)}`;
     res.redirect(redirectUrl);
 
   } catch (error) {

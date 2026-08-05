@@ -45,7 +45,52 @@ document.addEventListener('DOMContentLoaded', () => {
   // GIS is loaded with async/defer and may not exist at DOMContentLoaded.
   waitForGoogleIdentityServices();
   fetchLiveStats();             // ← real network stats on every page load
+
+  // Handle redirect-based OAuth callback (mobile flow).
+  // After Google redirects back to /?auth=success&user_id=...,
+  // the access token arrives in the URL hash as #gat=...
+  handleOAuthRedirectCallback();
 });
+
+/**
+ * Detect and process a redirect-flow OAuth return.
+ * Called on every page load — exits immediately when there's nothing to handle.
+ */
+async function handleOAuthRedirectCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const authStatus = params.get('auth');
+
+  if (authStatus === 'success') {
+    // Extract the access token from the URL hash (#gat=<token>)
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const token = hashParams.get('gat');
+
+    // Clean the URL immediately so the token isn't visible or bookmarked
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    if (token) {
+      appState.googleAccessToken = token;
+
+      // Register the token server-side (best-effort — don't block on failure)
+      try {
+        const registration = await registerGoogleToken(token);
+        if (registration?.profile?.id) appState.supabaseUserId = registration.profile.id;
+      } catch (err) {
+        console.warn('Redirect flow — server registration unavailable:', err.message);
+      }
+
+      // Fetch Google profile and open the dashboard
+      await fetchGoogleUserProfile(token);
+      fetchDirectoryContacts();
+    } else {
+      // auth=success but no token in hash — tell the user to retry
+      showToast("Connexion réussie mais token absent. Reconnectez-vous.", 'fa-solid fa-circle-exclamation');
+    }
+  } else if (params.get('error')) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+    showToast("Connexion Google annulée ou échouée. Réessayez.", 'fa-solid fa-circle-exclamation');
+  }
+}
 
 /**
  * Wait for Google's async script so a click made immediately after page load
@@ -214,7 +259,14 @@ function initGoogleOAuth() {
         }
 
         // Fetch profile info (name, email, picture), then open the dashboard.
-        await fetchGoogleUserProfile(tokenResponse.access_token);
+        // Wrapped in try/catch so a transient Google API failure never silently
+        // blocks the UI from updating.
+        try {
+          await fetchGoogleUserProfile(tokenResponse.access_token);
+        } catch (profileErr) {
+          console.error('❌ fetchGoogleUserProfile failed:', profileErr.message);
+          showToast("Profil Google non chargé. Réessayez.", 'fa-solid fa-circle-exclamation');
+        }
 
         // Contact sync is non-blocking and may require additional consent.
         await fetchGoogleContacts(tokenResponse.access_token);
@@ -290,6 +342,26 @@ async function refreshGoogleToken() {
  * Trigger GIS Token Client Popup
  */
 async function requestGoogleAuth() {
+  // On mobile, GIS popups are blocked by the browser. Use the backend redirect
+  // flow instead — Google redirects back to the app and the access token is
+  // returned in the URL hash (#gat=...) so it never touches any server log.
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (isMobile) {
+    try {
+      const res  = await fetch('/api/auth/google/url');
+      const data = await res.json();
+      if (data.success && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+    } catch (err) {
+      console.error('❌ Impossible de récupérer l\'URL Google :', err);
+    }
+    showToast("Connexion Google indisponible. Réessayez.", 'fa-solid fa-circle-exclamation');
+    return;
+  }
+
+  // Desktop: GIS popup flow
   if (!tokenClient) {
     const initialized = await waitForGoogleIdentityServices();
     if (!initialized) {
@@ -417,7 +489,7 @@ async function fetchGoogleUserProfile(accessToken) {
   } catch (err) {
     console.error("❌ Erreur récupération profil Google :", err);
     showToast("Google a répondu, mais le profil n'a pas pu être chargé. Réessayez.", 'fa-solid fa-circle-exclamation');
-    throw err;
+    // Do NOT re-throw — let the caller continue so the UI isn't left in a broken state.
   }
 }
 
