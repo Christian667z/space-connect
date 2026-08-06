@@ -142,9 +142,23 @@ app.get('/api/health', (req, res) => {
 
 // ── Distribution du Frontend (Fichiers Statiques) ────────────────────────────
 const frontendPath = path.resolve(__dirname, '../Frontend');
-app.use(express.static(frontendPath));
 
-// Redirection SPA : Toutes les requêtes hors API renvoient sur index.html
+// ── Clean URL redirects: strip .html extensions permanently (301) ─────────────
+app.get(/^(.+)\.html$/, (req, res) => {
+  const clean = req.params[0];          // e.g. '/privacy', '/terms', '/index'
+  const target = clean === '/index' ? '/' : clean;
+  const qs = req.url.includes('?') ? '?' + req.url.split('?')[1] : '';
+  res.redirect(301, target + qs);
+});
+
+// ── Serve static assets (CSS, JS, images…) — no directory listings ───────────
+app.use(express.static(frontendPath, { extensions: ['html'] }));
+
+// ── Explicit clean-URL routes for standalone HTML pages ──────────────────────
+app.get('/privacy', (req, res) => res.sendFile(path.join(frontendPath, 'privacy.html')));
+app.get('/terms',   (req, res) => res.sendFile(path.join(frontendPath, 'terms.html')));
+
+// ── SPA fallback: every other non-API GET returns index.html ─────────────────
 app.get('*', (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });

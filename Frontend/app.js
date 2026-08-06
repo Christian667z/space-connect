@@ -1096,8 +1096,8 @@ function updateAuthUI() {
     authNav.innerHTML = `
       <button class="btn btn-dark nav-lang-btn" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;"><i class="fa-solid fa-language" style="color: var(--accent-red-bright);"></i> FR <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i></button>
       <a href="#social-section" class="btn btn-dark" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;"><i class="fa-solid fa-share-nodes" style="color: var(--accent-red-bright);"></i> RÉSEAUX</a>
-      <a href="privacy.html" class="btn btn-dark" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;"><i class="fa-solid fa-user-shield" style="color: var(--accent-red-bright);"></i> CONFIDENTIALITÉ</a>
-      <a href="terms.html" class="btn btn-dark" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;"><i class="fa-solid fa-scale-balanced" style="color: var(--accent-red-bright);"></i> CGU</a>
+      <a href="/privacy" class="btn btn-dark" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;"><i class="fa-solid fa-user-shield" style="color: var(--accent-red-bright);"></i> CONFIDENTIALITÉ</a>
+      <a href="/terms" class="btn btn-dark" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;"><i class="fa-solid fa-scale-balanced" style="color: var(--accent-red-bright);"></i> CGU</a>
       <button class="btn btn-dark btn-google-login">SE CONNECTER</button>
       <button class="btn btn-red btn-google-login">REJOINDRE</button>
     `;
