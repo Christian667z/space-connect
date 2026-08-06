@@ -671,6 +671,11 @@ h1, h2, h3, h4 {
 }
 
 .counter-ring-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   text-align: center;
   z-index: 2;
 }
@@ -2517,6 +2522,16 @@ img, svg, canvas, video {
   }
 
   .nav-saas-label {
+    display: none;
+  }
+
+  /* FR language button: hide on mobile — SE CONNECTER + REJOINDRE only */
+  .nav-lang-btn {
+    display: none !important;
+  }
+
+  /* ── Step watermark numbers: hide on mobile to prevent bleed-over ── */
+  .step-number-watermark {
     display: none;
   }
 
