@@ -2560,10 +2560,19 @@ img, svg, canvas, video {
     display: flex;
     align-items: center;
     flex-wrap: nowrap;
-    gap: 6px !important;
-    max-width: calc(100vw - 160px); /* guarantee logo side always has room */
-    overflow: hidden;
+    gap: 5px !important;
+    max-width: calc(100vw - 155px); /* guarantee logo side always has room */
+    overflow: visible; /* no clipping — buttons must stay fully visible */
     flex-shrink: 1;
+  }
+
+  /* Keep every button in the header fully visible and compact on small screens */
+  .nav-actions .btn,
+  #nav-auth-container .btn {
+    padding: 0.38rem 0.6rem !important;
+    font-size: 0.72rem !important;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   /* Profile pill: avatar only — hide name and tighten padding */
@@ -3086,24 +3095,29 @@ img, svg, canvas, video {
   /* ── Bottom Nav Bar ── */
   body.in-dashboard .dash-bottom-nav {
     display: flex;
+    align-items: stretch;       /* items fill the full bar height */
+    justify-content: space-around; /* even spacing — no overlaps */
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     z-index: 900;
+    min-height: 60px;
     background: #0a080d;
     border-top: 1px solid rgba(255, 255, 255, 0.09);
     padding-bottom: env(safe-area-inset-bottom, 0px);
+    overflow: hidden; /* contain any accidental overflow */
   }
 
   .dash-bottom-item {
-    flex: 1;
+    flex: 1 1 0;               /* equal share; never grows beyond 1/5 */
+    min-width: 0;              /* allow text-overflow if label is long */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 4px;
-    padding: 0.6rem 0.2rem 0.5rem;
+    padding: 0.55rem 0.15rem 0.45rem;
     background: none;
     border: none;
     color: rgba(255, 255, 255, 0.38);
@@ -3115,11 +3129,20 @@ img, svg, canvas, video {
     cursor: pointer;
     transition: color 0.2s;
     -webkit-tap-highlight-color: transparent;
+    overflow: hidden;          /* clip label text rather than push siblings */
+  }
+
+  .dash-bottom-item span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   .dash-bottom-item i {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     line-height: 1;
+    flex-shrink: 0;
   }
 
   .dash-bottom-item.active {
