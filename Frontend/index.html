@@ -766,67 +766,121 @@
 
                         <!-- ================= TAB 2: CONTACTS (FICHE CONTACT) ================= -->
                         <div class="dash-tab-pane" id="tab-contacts">
-                            <div class="dash-header-bar">
-                                <div class="dash-title-box">
-                                    <h2>Contacts</h2>
-                                    <p>C'est le nom et le numéro qui apparaissent dans l'annuaire que tout le monde télécharge.</p>
+
+                            <!-- ── Stats strip ─────────────────────────────────────────── -->
+                            <div class="ctab-stats-strip">
+                                <!-- Main slot card -->
+                                <div class="ctab-stat-main">
+                                    <div class="ctab-stat-icon-wrap">
+                                        <i class="fa-solid fa-id-card"></i>
+                                    </div>
+                                    <div class="ctab-stat-main-body">
+                                        <span class="ctab-label-sm">FICHES CONTACT</span>
+                                        <div class="ctab-slot-val" id="stat-slots-used">—/3 emplacements<br>utilisés</div>
+                                    </div>
+                                    <div class="ctab-slot-dots">
+                                        <div class="ctab-slot-dot filled"></div>
+                                        <div class="ctab-slot-dot"></div>
+                                        <div class="ctab-slot-dot"></div>
+                                    </div>
+                                </div>
+                                <!-- Mini stat pair -->
+                                <div class="ctab-stat-pair">
+                                    <div class="ctab-stat-mini">
+                                        <span class="ctab-label-sm"><i class="fa-solid fa-pen-to-square"></i> MODIFS RESTANTES</span>
+                                        <strong class="ctab-stat-num" id="stat-edits-remaining">—/2</strong>
+                                        <span class="ctab-stat-hint">Par numéro · reset mensuel</span>
+                                    </div>
+                                    <div class="ctab-stat-mini">
+                                        <span class="ctab-label-sm"><i class="fa-solid fa-shield-halved"></i> PROTÉGÉ</span>
+                                        <span class="ctab-stat-desc-sm">8 inscriptions/h par IP · 15 par compte</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Indicators Header -->
-                            <div class="card-panel" style="margin-bottom: 2rem;">
-                                <span style="font-size: 0.75rem; font-weight: 800; color: var(--accent-red-bright); letter-spacing: 0.05em;">VOTRE FICHE CONTACT</span>
-                                <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 1.5rem;">Votre numéro WhatsApp</h3>
+                            <!-- ── Active contact card ──────────────────────────────────── -->
+                            <div class="ctab-active-card">
+                                <div class="ctab-active-text">
+                                    <span class="ctab-active-name" id="slot-card-name">OG Asta | Développeur</span>
+                                    <span class="ctab-active-phone" id="slot-card-phone">+509 3567-2037</span>
+                                </div>
+                                <button class="ctab-trash-btn" type="button"
+                                        onclick="showToast('Suppression de fiche disponible très bientôt.', 'fa-solid fa-trash')">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
 
-                                <div class="dash-trio-grid">
-                                    <div style="background: var(--bg-card-inner); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-card);">
-                                        <span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-id-card"></i> FICHES DE CONTACT</span>
-                                        <h4 style="font-size: 1.1rem; margin-top: 0.3rem;" id="stat-slots-used">—/3 emplacements</h4>
-                                    </div>
-                                    <div style="background: var(--bg-card-inner); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-card);">
-                                        <span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-pen-to-square"></i> MODIFS RESTANTES</span>
-                                        <h4 style="font-size: 1.1rem; margin-top: 0.3rem;" id="stat-edits-remaining">—/2 restantes</h4>
-                                    </div>
-                                    <div style="background: var(--bg-card-inner); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-card);">
-                                        <span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-shield"></i> PROTÉGÉ</span>
-                                        <h4 style="font-size: 1.1rem; margin-top: 0.3rem;">8 insc/h par IP</h4>
+                            <button class="ctab-add-btn" type="button"
+                                    onclick="showToast('Multi-fiches bientôt disponible !', 'fa-solid fa-star')">
+                                <i class="fa-solid fa-plus"></i> Ajouter une fiche
+                            </button>
+
+                            <!-- ── Edit form ────────────────────────────────────────────── -->
+                            <form id="form-phone-sync" class="ctab-form">
+
+                                <div class="ctab-field">
+                                    <label class="ctab-field-label" for="input-full-name">NOM COMPLET</label>
+                                    <div class="ctab-input-wrap">
+                                        <input type="text" id="input-full-name" class="ctab-input"
+                                               placeholder="OG VotreNom" required>
+                                        <i class="fa-solid fa-user ctab-input-icon"></i>
                                     </div>
                                 </div>
 
-                                <!-- Contact Cards Selector -->
-                                <div class="contact-slots-container">
-                                    <div class="contact-slot-card selected">
-                                        <h5 style="font-size: 0.95rem; font-weight: 800;" id="slot-card-name">OG Asta | Développeur</h5>
-                                        <p style="font-size: 0.8rem; color: var(--text-muted);" id="slot-card-phone">+509 3567-2037</p>
-                                    </div>
-                                    <div class="contact-slot-card add-new" onclick="showToast('Option multi-fiches disponible très bientôt !', 'fa-solid fa-star')">
-                                        <i class="fa-solid fa-plus" style="margin-right: 0.5rem;"></i> AJOUTER UNE FICHE
-                                    </div>
-                                </div>
-
-                                <!-- Contact Form -->
-                                <form id="form-phone-sync">
-                                    <div style="margin-bottom: 1.25rem;">
-                                        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem;">NOM COMPLET (AFFICHÉ)</label>
-                                        <input type="text" id="input-full-name" class="btn btn-dark" style="width: 100%; text-align: left; padding: 0.85rem 1rem; border-radius: 12px; font-size: 1rem;" value="OG Asta | Développeur" placeholder="OG VotreNom" required>
-                                    </div>
-
-                                    <div style="margin-bottom: 1.5rem;">
-                                        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem;">NUMÉRO DE TÉLÉPHONE WHATSAPP</label>
-                                        <div class="form-phone-row" style="display: flex; gap: 0.75rem;">
-                                            <select class="btn btn-dark" id="select-country-code" style="padding: 0.8rem 1rem; border-radius: 12px;">
-                                                <option value="+509">🇭🇹 HT (+509)</option>
-                                                <option value="+1">🇺🇸 US/CA (+1)</option>
-                                                <option value="+33">🇫🇷 FR (+33)</option>
-                                            </select>
-                                            <input type="tel" id="input-phone-number" class="btn btn-dark" style="flex: 1; text-align: left; padding: 0.85rem 1rem; border-radius: 12px; font-size: 1rem;" value="3567 2037" required>
+                                <div class="ctab-field">
+                                    <label class="ctab-field-label" for="input-phone-number">NUMÉRO DE TÉLÉPHONE</label>
+                                    <div class="ctab-phone-row">
+                                        <select id="select-country-code" class="ctab-select">
+                                            <option value="+509">🇭🇹 HT (+509)</option>
+                                        </select>
+                                        <div class="ctab-input-wrap ctab-input-phone">
+                                            <input type="tel" id="input-phone-number" class="ctab-input"
+                                                   placeholder="3567 2037" required>
+                                            <i class="fa-solid fa-phone ctab-input-icon"></i>
                                         </div>
                                     </div>
+                                </div>
 
-                                    <button type="submit" class="btn btn-red" style="width: 100%;"><i class="fa-solid fa-floppy-disk"></i> Sauvegarder ma fiche contact</button>
-                                </form>
+                                <!-- Active status indicator -->
+                                <div class="ctab-status-bar">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    Votre numéro est actif dans l'annuaire mondial
+                                </div>
 
+                                <button type="submit" id="btn-save-phone-sync" class="ctab-save-btn">
+                                    <i class="fa-solid fa-pen-to-square"></i> Modifier mes infos
+                                </button>
+
+                            </form>
+
+                            <!-- ── Network directory ────────────────────────────────────── -->
+                            <div class="ctab-directory">
+                                <div class="ctab-dir-head">
+                                    <div class="ctab-dir-icon-wrap">
+                                        <i class="fa-solid fa-earth-americas"></i>
+                                    </div>
+                                    <div class="ctab-dir-head-text">
+                                        <h3 class="ctab-dir-title">Annuaire du réseau</h3>
+                                        <p class="ctab-dir-subtitle">Recherchez tous les membres que vous pouvez synchroniser.</p>
+                                    </div>
+                                    <span class="ctab-dir-count-badge" id="ctab-dir-count">0</span>
+                                </div>
+
+                                <div class="ctab-search-wrap">
+                                    <i class="fa-solid fa-magnifying-glass ctab-search-icon"></i>
+                                    <input type="text" id="ctab-search" class="ctab-search-input"
+                                           placeholder="Nom ou numéro...">
+                                </div>
+
+                                <select id="ctab-filter-country" class="ctab-country-filter">
+                                    <option value="ALL">🌍 Tous les pays</option>
+                                </select>
+
+                                <div id="ctab-member-list" class="ctab-member-list"></div>
+
+                                <p class="ctab-dir-total" id="ctab-dir-total"></p>
                             </div>
+
                         </div>
 
                         <!-- ================= TAB 2.5: LISTES D'UTILISATEUR (ANNUAIRE MONDIAL) ================= -->

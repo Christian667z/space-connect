@@ -1366,7 +1366,19 @@ function populateCountrySelectors() {
     });
   }
 
-  // 3. Directory country filter (#directory-filter-country)
+  // 3. Contacts-tab mini-directory country filter (#ctab-filter-country)
+  const ctabCtrySel = document.getElementById('ctab-filter-country');
+  if (ctabCtrySel) {
+    ctabCtrySel.innerHTML = '<option value="ALL">🌍 Tous les pays</option>';
+    WORLD_COUNTRIES.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.code;
+      opt.textContent = `${c.flag} ${c.name}`;
+      ctabCtrySel.appendChild(opt);
+    });
+  }
+
+  // 4. Directory country filter (#directory-filter-country)
   const ctrySel = document.getElementById('directory-filter-country');
   if (ctrySel) {
     ctrySel.innerHTML = '<option value="ALL">🌍 Tous les pays</option>';
@@ -1402,6 +1414,67 @@ const directoryState = {
   countryFilter: 'ALL',
   codeFilter: 'ALL'
 };
+
+// Separate state for the mini-directory inside the Contacts tab
+const ctabDirState = {
+  searchQuery: '',
+  countryFilter: 'ALL'
+};
+
+function renderContactsMiniList() {
+  const container   = document.getElementById('ctab-member-list');
+  const countBadge  = document.getElementById('ctab-dir-count');
+  const footerCount = document.getElementById('ctab-dir-total');
+  if (!container) return;
+
+  const contacts = directoryState.allContacts;
+
+  if (!contacts.length) {
+    container.innerHTML = `
+      <p style="text-align:center;padding:2rem 0;color:var(--text-muted);font-size:0.875rem;">
+        <i class="fa-solid fa-users-slash" style="display:block;font-size:1.75rem;margin-bottom:0.6rem;opacity:0.4;"></i>
+        Connectez-vous pour voir les membres.
+      </p>`;
+    if (countBadge)  countBadge.textContent  = '0';
+    if (footerCount) footerCount.textContent = '';
+    return;
+  }
+
+  const filtered = contacts.filter(c => {
+    const name    = formatOgName(c.full_name || '').toLowerCase();
+    const query   = ctabDirState.searchQuery.toLowerCase();
+    const matchQ  = !query || name.includes(query) || (c.phone_number || '').includes(query);
+    const meta    = getCountryMeta(c.country_code);
+    const matchC  = ctabDirState.countryFilter === 'ALL' || meta.code === ctabDirState.countryFilter;
+    return matchQ && matchC;
+  });
+
+  if (countBadge)  countBadge.textContent  = String(filtered.length);
+  if (footerCount) footerCount.textContent = `${filtered.length} sur ${contacts.length}`;
+
+  if (!filtered.length) {
+    container.innerHTML = `
+      <p style="text-align:center;padding:1.5rem 0;color:var(--text-muted);font-size:0.875rem;">
+        Aucun membre ne correspond.
+      </p>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(c => {
+    const name    = formatOgName(c.full_name);
+    const initial = name.replace(/^OG\s+/i, '').charAt(0).toUpperCase() || 'O';
+    const meta    = getCountryMeta(c.country_code);
+    const phone   = `${c.country_code || '+509'}  ${c.phone_number || ''}`;
+    return `
+      <div class="ctab-member-row">
+        <div class="ctab-member-avatar">${initial}</div>
+        <div class="ctab-member-info">
+          <span class="ctab-member-name">${name}</span>
+          <span class="ctab-member-phone">${meta.flag} ${phone}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
 
 async function fetchDirectoryContacts() {
   // The directory endpoint is intentionally protected because it contains
@@ -1455,6 +1528,9 @@ function renderDirectoryGrid() {
 
   if (totalBadge) totalBadge.textContent = `${filtered.length} Membres`;
   if (selectedCountElem) selectedCountElem.textContent = `${directoryState.selectedIds.size} / ${filtered.length} sélectionné(s)`;
+
+  // Keep the Contacts-tab mini-directory in sync
+  renderContactsMiniList();
 
   if (filtered.length === 0) {
     container.innerHTML = `
@@ -1539,6 +1615,16 @@ function initDirectoryListeners() {
     setTimeout(() => {
       showToast('Contacts synchronisés dans votre compte Google !', 'fa-solid fa-check');
     }, 1200);
+  });
+
+  // Contacts-tab mini-directory: search + country filter
+  document.getElementById('ctab-search')?.addEventListener('input', (e) => {
+    ctabDirState.searchQuery = e.target.value;
+    renderContactsMiniList();
+  });
+  document.getElementById('ctab-filter-country')?.addEventListener('change', (e) => {
+    ctabDirState.countryFilter = e.target.value;
+    renderContactsMiniList();
   });
 
   // Auto-refresh directory every 15 minutes (900,000 ms)
