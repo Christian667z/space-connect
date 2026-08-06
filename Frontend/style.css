@@ -775,8 +775,8 @@ h1, h2, h3, h4 {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #10B981;
-  box-shadow: 0 0 10px #10B981;
+  background: var(--accent-red-bright);
+  box-shadow: 0 0 10px var(--accent-red-bright);
 }
 
 .feed-count-badge {
@@ -828,7 +828,7 @@ h1, h2, h3, h4 {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #10B981;
+  background: var(--accent-red-bright);
   border: 2px solid var(--bg-dark);
 }
 
@@ -2198,9 +2198,9 @@ input:focus, select:focus, textarea:focus {
   font-weight: 800;
   padding: 0.25rem 0.65rem;
   border-radius: 9999px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10B981;
-  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(229, 9, 20, 0.15);
+  color: var(--accent-red-bright);
+  border: 1px solid rgba(229, 9, 20, 0.35);
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -3153,7 +3153,7 @@ img, svg, canvas, video {
 
 .ctab-active-phone {
   font-size: 0.82rem;
-  color: var(--text-muted);
+  color: var(--accent-red-bright);
 }
 
 .ctab-trash-btn {
@@ -3293,13 +3293,13 @@ img, svg, canvas, video {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  background: rgba(16, 185, 129, 0.09);
-  border: 1px solid rgba(16, 185, 129, 0.22);
+  background: rgba(229, 9, 20, 0.09);
+  border: 1px solid rgba(229, 9, 20, 0.22);
   border-radius: 12px;
   padding: 0.8rem 1rem;
   font-size: 0.875rem;
   font-weight: 700;
-  color: #10B981;
+  color: var(--accent-red-bright);
 }
 
 /* Save/modify button */

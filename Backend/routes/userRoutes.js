@@ -171,4 +171,68 @@ router.post('/phone', requireAuth, async (req, res) => {
   }
 });
 
+
+/**
+ * @route   DELETE /api/user/phone
+ * @desc    Remove the user's phone number from profile and contacts directory
+ * @access  Authenticated (Bearer Google token required)
+ */
+router.delete('/phone', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // 1. Clear phone fields from profile AND reset edit allowance.
+    //    Deletion is not an edit — resetting allows the member to restore
+    //    their number later without consuming a quota slot.
+    const { error: profileErr } = await supabase
+      .from('profiles')
+      .update({
+        phone_number         : null,
+        country_code         : null,
+        phone_edits_remaining: 2,     // restore full edit quota on deletion
+        updated_at           : new Date()
+      })
+      .eq('id', userId);
+    if (profileErr) throw profileErr;
+
+    // 2. Remove contact entry from community directory
+    const { error: contactErr } = await supabase
+      .from('contacts')
+      .delete()
+      .eq('user_id', userId);
+    if (contactErr) throw contactErr;
+
+    return res.json({ success: true, message: 'Numéro supprimé avec succès. Vous pouvez en ajouter un nouveau.' });
+  } catch (error) {
+    console.error('❌ Phone delete error:', error.message);
+    return res.status(500).json({ success: false, message: 'Impossible de supprimer le numéro.' });
+  }
+});
+
+/**
+ * @route   POST /api/user/sync-preference
+ * @desc    Persist the user's auto-sync toggle preference.
+ * @access  Authenticated (Bearer Google token required)
+ */
+router.post('/sync-preference', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { autoSyncEnabled } = req.body;
+    if (typeof autoSyncEnabled !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'autoSyncEnabled (boolean) requis.' });
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ auto_sync_enabled: autoSyncEnabled, updated_at: new Date() })
+      .eq('id', userId);
+
+    if (error) throw error;
+    return res.json({ success: true, autoSyncEnabled });
+  } catch (error) {
+    console.error('❌ Sync preference error:', error.message);
+    return res.status(500).json({ success: false, message: 'Impossible de sauvegarder la préférence.' });
+  }
+});
+
 module.exports = router;

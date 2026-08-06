@@ -507,6 +507,25 @@ async function fetchUserDashboardStats(token) {
       if (slotPhone && storedPhone)       slotPhone.textContent = `${profile.country_code ?? ''} ${storedPhone}`;
     }
 
+    // Restore auto-sync toggle from persisted preference
+    if (typeof profile.auto_sync_enabled === 'boolean') {
+      const syncToggle = document.getElementById('toggle-auto-sync-check');
+      const syncPill   = document.getElementById('sync-status-pill');
+      const syncDesc   = document.getElementById('sync-toggle-desc');
+      if (syncToggle && !syncToggle.checked && profile.auto_sync_enabled) {
+        // Trigger the change event to start the interval and update UI
+        syncToggle.checked = true;
+        syncToggle.dispatchEvent(new Event('change'));
+      } else if (syncToggle && syncPill && syncDesc && !profile.auto_sync_enabled) {
+        syncToggle.checked = false;
+        syncPill.textContent = 'DÉSACTIVÉ';
+        syncPill.style.background  = 'rgba(255, 255, 255, 0.06)';
+        syncPill.style.borderColor = 'var(--border-card)';
+        syncPill.style.color       = 'var(--text-muted)';
+        syncDesc.textContent = 'Désactivé — vous devrez télécharger les contacts manuellement.';
+      }
+    }
+
     // Disable the save button if no edits left
     const saveBtn = document.getElementById('btn-save-phone-sync');
     if (saveBtn && editsRemaining <= 0) {
@@ -547,6 +566,8 @@ async function fetchGoogleUserProfile(accessToken) {
 
     // Load real slot / edit counts from backend right after login
     fetchUserDashboardStats(accessToken);
+    // Load real session info for account settings tab
+    fetchAndRenderSessions();
   } catch (err) {
     console.error("❌ Erreur récupération profil Google :", err);
     showToast("Google a répondu, mais le profil n'a pas pu être chargé. Réessayez.", 'fa-solid fa-circle-exclamation');
@@ -778,15 +799,69 @@ function initAuthLogic() {
   const syncPill = document.getElementById('sync-status-pill');
   const syncDesc = document.getElementById('sync-toggle-desc');
 
+  // Holds the auto-sync interval ID so we can clear it when disabled
+  let autoSyncIntervalId = null;
+
+  function startAutoSync() {
+    stopAutoSync(); // clear any previous interval
+    autoSyncIntervalId = setInterval(async () => {
+      if (!appState.googleAccessToken) return;
+      try {
+        const res = await fetch('/api/contacts/sync-google', {
+          method : 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${appState.googleAccessToken}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Auto-Sync : ${data.message}`, 'fa-solid fa-arrows-rotate');
+          fetchDirectoryContacts();
+        }
+      } catch (_) { /* silently ignore network errors during background sync */ }
+    }, 15 * 60 * 1000);
+  }
+
+  function stopAutoSync() {
+    if (autoSyncIntervalId !== null) {
+      clearInterval(autoSyncIntervalId);
+      autoSyncIntervalId = null;
+    }
+  }
+
   if (syncToggle && syncPill && syncDesc) {
-    syncToggle.addEventListener('change', (e) => {
+    syncToggle.addEventListener('change', async (e) => {
       if (e.target.checked) {
         syncPill.textContent = 'ACTIVÉ';
-        syncPill.style.background = 'rgba(16, 185, 129, 0.15)';
-        syncPill.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-        syncPill.style.color = '#10B981';
-        syncDesc.textContent = 'Activé — les nouveaux membres sont ajoutés automatiquement toutes les 15 minutes.';
+        syncPill.style.background = 'rgba(229, 9, 20, 0.15)';
+        syncPill.style.borderColor = 'rgba(229, 9, 20, 0.4)';
+        syncPill.style.color = 'var(--accent-red-bright)';
+        syncDesc.textContent = 'Activé — nouveaux membres synchronisés toutes les 15 min tant que cet onglet est ouvert.';
         showToast('Auto-Sync Google Contacts activé !', 'fa-solid fa-bolt');
+
+        // Trigger an immediate sync, then schedule the interval
+        if (appState.googleAccessToken) {
+          showToast('Synchronisation initiale en cours…', 'fa-solid fa-arrows-rotate');
+          try {
+            const res = await fetch('/api/contacts/sync-google', {
+              method : 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${appState.googleAccessToken}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+              showToast(data.message, 'fa-solid fa-circle-check');
+              fetchDirectoryContacts();
+            }
+          } catch (_) {}
+        }
+        startAutoSync();
+
+        // Persist preference to backend if authenticated
+        if (appState.googleAccessToken) {
+          fetch('/api/user/sync-preference', {
+            method : 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${appState.googleAccessToken}` },
+            body   : JSON.stringify({ autoSyncEnabled: true })
+          }).catch(() => {});
+        }
       } else {
         syncPill.textContent = 'DÉSACTIVÉ';
         syncPill.style.background = 'rgba(255, 255, 255, 0.06)';
@@ -794,6 +869,16 @@ function initAuthLogic() {
         syncPill.style.color = 'var(--text-muted)';
         syncDesc.textContent = 'Désactivé — vous devrez télécharger les contacts manuellement.';
         showToast('Auto-Sync Google Contacts désactivé.', 'fa-solid fa-power-off');
+        stopAutoSync();
+
+        // Persist disabled preference to backend
+        if (appState.googleAccessToken) {
+          fetch('/api/user/sync-preference', {
+            method : 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${appState.googleAccessToken}` },
+            body   : JSON.stringify({ autoSyncEnabled: false })
+          }).catch(() => {});
+        }
       }
     });
   }
@@ -834,6 +919,13 @@ function initAuthLogic() {
 }
 
 function logout() {
+  // Best-effort server-side token revocation
+  if (appState.googleAccessToken) {
+    fetch('/api/auth/sessions', {
+      method : 'DELETE',
+      headers: { 'Authorization': `Bearer ${appState.googleAccessToken}` }
+    }).catch(() => {});
+  }
   appState.isAuthenticated = false;
   appState.currentUser = null;
   appState.googleAccessToken = null;
@@ -842,6 +934,118 @@ function logout() {
   updateAuthUI();
   switchView('landing');
   showToast('Déconnecté de Space Connect.', 'fa-solid fa-right-from-bracket');
+}
+
+/**
+ * Delete the current user's phone number from the directory.
+ * Called by the trash icon on the active contact card.
+ */
+async function deletePhone() {
+  if (!appState.googleAccessToken) {
+    showToast('Connectez-vous pour supprimer votre fiche.', 'fa-solid fa-circle-exclamation');
+    return;
+  }
+  if (!confirm('Supprimer votre numéro de l\'annuaire ? Cette action est irréversible.')) return;
+
+  const doDelete = (token) => fetch('/api/user/phone', {
+    method : 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+
+  try {
+    let res  = await doDelete(appState.googleAccessToken);
+    let data = await res.json();
+
+    if (res.status === 401 && data.code === 'TOKEN_EXPIRED') {
+      const newToken = await refreshGoogleToken();
+      if (newToken) { res = await doDelete(newToken); data = await res.json(); }
+    }
+
+    if (data.success) {
+      // Reset the card UI
+      const slotName  = document.getElementById('slot-card-name');
+      const slotPhone = document.getElementById('slot-card-phone');
+      if (slotName)  slotName.textContent  = '—';
+      if (slotPhone) slotPhone.textContent = '—';
+      const phoneInput = document.getElementById('input-phone-number');
+      if (phoneInput) phoneInput.value = '';
+      showToast('Numéro supprimé de l\'annuaire.', 'fa-solid fa-trash-can');
+      fetchDirectoryContacts();
+      fetchUserDashboardStats(appState.googleAccessToken);
+    } else {
+      showToast(data.message || 'Erreur lors de la suppression.', 'fa-solid fa-circle-exclamation');
+    }
+  } catch (err) {
+    console.warn('deletePhone error:', err);
+    showToast('Erreur réseau. Réessayez.', 'fa-solid fa-circle-exclamation');
+  }
+}
+
+/**
+ * Fetch and display real session data from the backend.
+ * Shows the actual User-Agent, IP, and last-seen time.
+ */
+async function fetchAndRenderSessions() {
+  if (!appState.googleAccessToken) return;
+  try {
+    const res  = await fetch('/api/auth/sessions', {
+      headers: { 'Authorization': `Bearer ${appState.googleAccessToken}` }
+    });
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.sessions)) return;
+
+    const titleEl = document.getElementById('sessions-title');
+    const container = document.getElementById('sessions-container');
+    if (!container) return;
+
+    if (titleEl) {
+      // Honest label: shows the device making this request, not a full session registry
+      titleEl.textContent = 'SESSION EN COURS ( 1 )';
+    }
+
+    container.innerHTML = data.sessions.map(s => {
+      const ua      = s.userAgent || 'Appareil inconnu';
+      const device  = parseDeviceName(ua);
+      const since   = s.lastSeen ? new Date(s.lastSeen).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+      const ip      = s.ip ? `· IP ${s.ip}` : '';
+      return `
+        <div style="background: var(--bg-card-inner); border: 1px solid var(--border-card); border-radius: var(--radius-inner); padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+          <div>
+            <strong style="font-size: 0.95rem; font-weight: 800; display: block;">${s.isCurrent ? 'Cet appareil' : device}</strong>
+            <span style="font-size: 0.775rem; color: var(--text-muted);">${device} ${ip}</span>
+            <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-top: 0.2rem;">Dernière activité : ${since}</span>
+          </div>
+          <span style="color: var(--accent-red-bright); font-size: 0.8rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
+            <i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> Actif
+          </span>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    console.warn('fetchAndRenderSessions:', err.message);
+  }
+}
+
+/**
+ * Parse a User-Agent string into a human-readable device/browser label.
+ */
+function parseDeviceName(ua) {
+  if (!ua) return 'Appareil inconnu';
+  let browser = 'Navigateur';
+  let os      = '';
+
+  if (/Chrome\/(\d+)/.test(ua) && !/Chromium|Edg|OPR/.test(ua)) browser = `Chrome ${RegExp.$1}`;
+  else if (/Edg\/(\d+)/.test(ua))  browser = `Edge ${RegExp.$1}`;
+  else if (/Firefox\/(\d+)/.test(ua)) browser = `Firefox ${RegExp.$1}`;
+  else if (/OPR\/(\d+)/.test(ua))  browser = `Opera ${RegExp.$1}`;
+  else if (/Safari\//.test(ua) && !/Chrome/.test(ua)) browser = 'Safari';
+
+  if (/Windows NT/.test(ua))        os = 'Windows';
+  else if (/Android/.test(ua))      os = 'Android';
+  else if (/iPhone|iPad/.test(ua))  os = 'iOS';
+  else if (/Mac OS X/.test(ua))     os = 'macOS';
+  else if (/Linux/.test(ua))        os = 'Linux';
+
+  return [browser, os].filter(Boolean).join(' · ');
 }
 
 function updateAuthUI() {
@@ -917,6 +1121,11 @@ function initDashboardTabs() {
 }
 
 function switchDashTab(tabId) {
+  // Refresh session data when user opens the account tab
+  if (tabId === 'account' && appState.googleAccessToken) {
+    fetchAndRenderSessions();
+  }
+
   // Update sidebar active status
   document.querySelectorAll('.dash-nav-item[data-tab]').forEach(item => {
     if (item.getAttribute('data-tab') === tabId) {
@@ -1498,14 +1707,8 @@ async function fetchDirectoryContacts() {
 }
 
 function getMockDirectoryContacts() {
-  return [
-    { id: '1', full_name: 'OG Ednova graphic', country_code: '+509', phone_number: '41026788' },
-    { id: '2', full_name: 'OG Royaume - unis', country_code: '+509', phone_number: '56748217' },
-    { id: '3', full_name: 'OG Jonathan Saûs', country_code: '+509', phone_number: '40328101' },
-    { id: '4', full_name: 'OG Kossi Fernado', country_code: '+228', phone_number: '90123456' },
-    { id: '5', full_name: 'OG Doberto Jean', country_code: '+509', phone_number: '34567890' },
-    { id: '6', full_name: 'OG Jeff_tsukidev_test', country_code: '+33', phone_number: '612345678' }
-  ];
+  // Return empty — only real Supabase data is shown in the directory.
+  return [];
 }
 
 function renderDirectoryGrid() {

@@ -805,7 +805,7 @@
                                     <span class="ctab-active-phone" id="slot-card-phone">+509 3567-2037</span>
                                 </div>
                                 <button class="ctab-trash-btn" type="button"
-                                        onclick="showToast('Suppression de fiche disponible très bientôt.', 'fa-solid fa-trash')">
+                                        onclick="deletePhone()">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </div>
@@ -950,7 +950,7 @@
                                         <button class="btn btn-dark btn-download-vcf-action" style="padding: 0.65rem 1.2rem; border-radius: 10px; font-size: 0.825rem;">
                                             <i class="fa-solid fa-download" style="color: var(--accent-red-bright);"></i> EXPORTER VCF
                                         </button>
-                                        <button class="btn btn-red" id="btn-directory-add-google" style="padding: 0.65rem 1.3rem; border-radius: 10px; font-size: 0.825rem; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                                        <button class="btn btn-red" id="btn-directory-add-google" style="padding: 0.65rem 1.3rem; border-radius: 10px; font-size: 0.825rem;">
                                             <i class="fa-solid fa-user-plus"></i> AJOUTER À GOOGLE
                                         </button>
                                     </div>
@@ -1048,15 +1048,15 @@
                                     <span style="font-size: 0.725rem; font-weight: 800; color: var(--accent-red-bright); letter-spacing: 0.05em; display: block; margin-bottom: 1rem;">POURQUOI UTILISER L'AUTO-SYNC</span>
                                     <div style="display: flex; flex-direction: column; gap: 0.85rem;">
                                         <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.875rem;">
-                                            <i class="fa-solid fa-circle-check" style="color: #10B981;"></i>
+                                            <i class="fa-solid fa-circle-check" style="color: var(--accent-red-bright);"></i>
                                             <span>Ne signifie aucun nouveau membre — les contacts arrivent automatiquement sur votre téléphone.</span>
                                         </div>
                                         <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.875rem;">
-                                            <i class="fa-solid fa-circle-check" style="color: #10B981;"></i>
+                                            <i class="fa-solid fa-circle-check" style="color: var(--accent-red-bright);"></i>
                                             <span>Plus de contacts enregistrés = plus de vues sur vos statuts WhatsApp.</span>
                                         </div>
                                         <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.875rem;">
-                                            <i class="fa-solid fa-circle-check" style="color: #10B981;"></i>
+                                            <i class="fa-solid fa-circle-check" style="color: var(--accent-red-bright);"></i>
                                             <span>Plus besoin de télécharger le VCF manuellement après les 24 h d'intégration.</span>
                                         </div>
                                     </div>
@@ -1289,7 +1289,7 @@
                                             <strong style="font-size: 0.95rem; font-weight: 800; word-break: break-all;" id="user-account-email">aristhenesainvilusvladimiranto@gmail.com</strong>
                                         </div>
                                     </div>
-                                    <i class="fa-solid fa-circle-check" style="color: #10B981; font-size: 1.1rem; flex-shrink: 0;"></i>
+                                    <i class="fa-solid fa-circle-check" style="color: var(--accent-red-bright); font-size: 1.1rem; flex-shrink: 0;"></i>
                                 </div>
 
                                 <!-- Box 2: Plan Actuel -->
@@ -1306,15 +1306,18 @@
 
                                 <!-- Box 3: Session Active -->
                                 <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.25rem;">
-                                    <span style="font-size: 0.725rem; font-weight: 800; color: var(--text-muted); letter-spacing: 0.05em; display: block; margin-bottom: 1rem;">SESSION ACTIVE ( 1 )</span>
-                                    <div style="background: var(--bg-card-inner); border: 1px solid var(--border-card); border-radius: var(--radius-inner); padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between;">
-                                        <div>
-                                            <strong style="font-size: 0.95rem; font-weight: 800; display: block;">Cet appareil</strong>
-                                            <span style="font-size: 0.775rem; color: var(--text-muted);">Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/148.0.0.0 Safari/537.36</span>
-                                        </div>
-                                        <span style="color: #10B981; font-size: 0.8rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
-                                            <i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> Actif
-                                        </span>
+                                    <span style="font-size: 0.725rem; font-weight: 800; color: var(--text-muted); letter-spacing: 0.05em; display: block; margin-bottom: 1rem;" id="sessions-title">SESSION EN COURS</span>
+                                    <div id="sessions-container">
+                                      <div style="background: var(--bg-card-inner); border: 1px solid var(--border-card); border-radius: var(--radius-inner); padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+                                          <div>
+                                              <strong style="font-size: 0.95rem; font-weight: 800; display: block;" id="session-device-name">Cet appareil</strong>
+                                              <span style="font-size: 0.775rem; color: var(--text-muted);" id="session-ua">—</span>
+                                              <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-top: 0.2rem;" id="session-since">—</span>
+                                          </div>
+                                          <span style="color: var(--accent-red-bright); font-size: 0.8rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
+                                              <i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> Actif
+                                          </span>
+                                      </div>
                                     </div>
                                 </div>
                             </div>

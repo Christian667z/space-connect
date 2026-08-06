@@ -243,4 +243,66 @@ router.post('/refresh', async (req, res) => {
   }
 });
 
+const { requireAuth } = require('../middleware/auth');
+
+/**
+ * @route   GET /api/auth/sessions
+ * @desc    Return current-request device metadata for the authenticated user.
+ *          Note: this reflects the device making this request (no persistent
+ *          session records exist in the DB). profiles.updated_at tracks the
+ *          last profile write, used as a "last activity" approximation.
+ * @access  Authenticated (requireAuth verifies audience, client ID, email_verified)
+ */
+router.get('/sessions', requireAuth, async (req, res) => {
+  try {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('id, email, updated_at')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error || !profile) {
+      return res.status(404).json({ success: false, message: 'Profil introuvable.' });
+    }
+
+    const ua = req.headers['user-agent'] || 'Appareil inconnu';
+    const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
+
+    // Single entry — the device/session making this request
+    const sessions = [{
+      id        : profile.id,
+      isCurrent : true,
+      userAgent : ua,
+      ip        : ip || null,
+      lastSeen  : profile.updated_at || new Date().toISOString(),
+      email     : profile.email
+    }];
+
+    return res.json({ success: true, sessions });
+  } catch (err) {
+    console.error('❌ Sessions fetch error:', err.message);
+    return res.status(500).json({ success: false, message: 'Erreur lors de la récupération des sessions.' });
+  }
+});
+
+/**
+ * @route   DELETE /api/auth/sessions
+ * @desc    Server-side sign-out — clear stored tokens (invalidates all devices
+ *          that use the stored refresh token).
+ * @access  Authenticated (requireAuth verifies audience, client ID, email_verified)
+ */
+router.delete('/sessions', requireAuth, async (req, res) => {
+  try {
+    await supabase.from('profiles').update({
+      google_access_token : null,
+      google_refresh_token: null,
+      access_token_hash   : null
+    }).eq('id', req.user.id);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Sessions delete error:', err.message);
+    return res.status(500).json({ success: false });
+  }
+});
+
 module.exports = router;
