@@ -1055,11 +1055,11 @@ function updateAuthUI() {
 
   if (appState.isAuthenticated && appState.currentUser) {
     authNav.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 0.6rem; background: rgba(255,255,255,0.05); padding: 0.35rem 0.8rem 0.35rem 0.35rem; border-radius: 9999px; border: 1px solid var(--border-card);">
-        <img src="${appState.currentUser.avatar}" style="width: 28px; height: 28px; border-radius: 50%;" alt="Avatar">
-        <span style="font-weight: 700; font-size: 0.825rem;">${appState.currentUser.name}</span>
+      <div class="nav-user-pill">
+        <img src="${appState.currentUser.avatar}" class="nav-pill-avatar" alt="Avatar">
+        <span class="nav-pill-name">${appState.currentUser.name}</span>
       </div>
-      <button class="btn btn-red btn-sm" onclick="switchView('dashboard')">Mon Espace SaaS</button>
+      <button class="btn btn-red btn-sm nav-saas-btn" onclick="switchView('dashboard')">Mon Espace SaaS</button>
     `;
     if (unauthNotice) unauthNotice.style.display = 'none';
     if (authContent) authContent.style.display = 'block';

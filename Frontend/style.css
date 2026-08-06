@@ -294,6 +294,36 @@ h1, h2, h3, h4 {
   gap: 0.75rem;
 }
 
+/* ── Navbar: profile pill (authenticated state) ─────────────────────────── */
+.nav-user-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.35rem 0.8rem 0.35rem 0.35rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-card);
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.nav-pill-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.nav-pill-name {
+  font-weight: 700;
+  font-size: 0.825rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;
@@ -2422,6 +2452,50 @@ img, svg, canvas, video {
   }
   .onboarding-steps-grid {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Navbar responsive: hide username text ≤ 600 px, keep avatar only ────── */
+@media (max-width: 600px) {
+  /* Ensure navbar itself never overflows — no absolute-positioned children */
+  .navbar {
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  /* nav-brand: never shrinks, never overflows */
+  .nav-brand {
+    flex-shrink: 0;
+  }
+
+  /* nav-actions / auth container: flexible, no overflow */
+  .nav-actions,
+  #nav-auth-container {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 6px !important;
+    max-width: calc(100vw - 130px);
+    overflow: hidden;
+  }
+
+  /* Profile pill: hide name, keep avatar */
+  .nav-user-pill {
+    padding: 0.25rem !important;
+    gap: 0 !important;
+  }
+
+  .nav-pill-name {
+    display: none;
+  }
+
+  /* "Mon Espace SaaS" button: tighter padding + smaller text */
+  .nav-saas-btn {
+    padding: 0.35rem 0.6rem !important;
+    font-size: 0.72rem !important;
+    white-space: nowrap;
   }
 }
 
