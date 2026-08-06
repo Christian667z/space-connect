@@ -36,20 +36,80 @@ function formatOgName(name) {
 let tokenClient;
 let googleReadyPromise;
 
+/* ── Session Persistence ─────────────────────────────────────────────────────
+   Keeps the user logged in across page navigations (e.g. privacy.html → back).
+   Google access tokens live ~1 h; we restore optimistically and validate quietly.
+   ─────────────────────────────────────────────────────────────────────────── */
+const SESSION_KEY = 'sc_session';
+
+function persistSession() {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      googleAccessToken: appState.googleAccessToken,
+      supabaseUserId   : appState.supabaseUserId,
+      currentUser      : appState.currentUser
+    }));
+  } catch (_) {}
+}
+
+function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+}
+
+async function restoreSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (!saved?.googleAccessToken || !saved?.currentUser) return;
+
+    // Restore state immediately so the dashboard appears without a flash.
+    appState.googleAccessToken = saved.googleAccessToken;
+    appState.supabaseUserId    = saved.supabaseUserId || null;
+    appState.isAuthenticated   = true;
+    appState.currentUser       = saved.currentUser;
+
+    updateAuthUI();
+    switchView('dashboard');
+    fetchUserDashboardStats(saved.googleAccessToken);
+    fetchDirectoryContacts();
+
+    // Validate the token silently in the background.
+    // If expired, attempt a GIS silent refresh; logout only on unrecoverable failure.
+    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${saved.googleAccessToken}` }
+    }).then(res => {
+      if (!res.ok) {
+        refreshGoogleToken().then(newToken => {
+          if (newToken) { persistSession(); }
+          else          { logout(); }
+        });
+      }
+    }).catch(() => { /* network offline — keep session */ });
+
+  } catch (_) {
+    clearSession();
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-  populateCountrySelectors();   // ← world flags & dial codes first
+  populateCountrySelectors();
   initFloatingCapsules();
   initFAQAccordion();
   initAuthLogic();
   initVCFGenerator();
+  initBottomNav();
   // GIS is loaded with async/defer and may not exist at DOMContentLoaded.
   waitForGoogleIdentityServices();
-  fetchLiveStats();             // ← real network stats on every page load
+  fetchLiveStats();
 
-  // Handle redirect-based OAuth callback (mobile flow).
-  // After Google redirects back to /?auth=success&user_id=...,
-  // the access token arrives in the URL hash as #gat=...
-  handleOAuthRedirectCallback();
+  // Mobile OAuth redirect takes priority over session restore.
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('auth') || urlParams.get('error')) {
+    handleOAuthRedirectCallback();
+  } else {
+    restoreSession();
+  }
 });
 
 /**
@@ -479,6 +539,7 @@ async function fetchGoogleUserProfile(accessToken) {
       avatar: profile.picture || 'img/OG Image.png'
     };
 
+    persistSession();   // ← keep auth across page navigations
     closeModal('modal-google-auth');
     updateAuthUI();
     switchView('dashboard');
@@ -777,6 +838,7 @@ function logout() {
   appState.currentUser = null;
   appState.googleAccessToken = null;
   appState.supabaseUserId = null;
+  clearSession();
   updateAuthUI();
   switchView('landing');
   showToast('Déconnecté de Space Connect.', 'fa-solid fa-right-from-bracket');
@@ -880,6 +942,63 @@ function switchDashTab(tabId) {
   if (targetPane) {
     targetPane.classList.add('active');
   }
+
+  // Keep mobile bottom nav in sync
+  updateBottomNavActive(tabId);
+}
+
+/* ── Mobile Bottom Navigation ────────────────────────────────────────────── */
+function updateBottomNavActive(tabId) {
+  const mainTabIds = ['overview', 'contacts', 'autosync', 'download'];
+  let moreIsActive = false;
+
+  document.querySelectorAll('.dash-bottom-item[data-tab]').forEach(btn => {
+    const isActive = btn.getAttribute('data-tab') === tabId;
+    btn.classList.toggle('active', isActive);
+  });
+
+  if (!mainTabIds.includes(tabId)) {
+    moreIsActive = true;
+  }
+  const moreBtn = document.getElementById('dash-bottom-more-btn');
+  if (moreBtn) moreBtn.classList.toggle('active', moreIsActive);
+}
+
+function closeMoreSheet() {
+  document.getElementById('dash-more-sheet')?.classList.remove('open');
+  document.getElementById('dash-more-overlay')?.classList.remove('open');
+}
+
+function initBottomNav() {
+  // Primary tab buttons
+  document.querySelectorAll('.dash-bottom-item[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchDashTab(btn.getAttribute('data-tab'));
+    });
+  });
+
+  // PLUS / More button
+  const moreBtn    = document.getElementById('dash-bottom-more-btn');
+  const moreSheet  = document.getElementById('dash-more-sheet');
+  const moreOverlay = document.getElementById('dash-more-overlay');
+  if (moreBtn && moreSheet) {
+    moreBtn.addEventListener('click', () => {
+      const isOpen = moreSheet.classList.contains('open');
+      moreSheet.classList.toggle('open', !isOpen);
+      moreOverlay?.classList.toggle('open', !isOpen);
+    });
+  }
+  if (moreOverlay) {
+    moreOverlay.addEventListener('click', closeMoreSheet);
+  }
+
+  // Items inside the More sheet
+  document.querySelectorAll('.dash-more-item[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchDashTab(btn.getAttribute('data-tab'));
+      closeMoreSheet();
+    });
+  });
 }
 
 function copyInviteLink() {
@@ -898,6 +1017,8 @@ function switchView(viewName) {
     target.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+  // Used by CSS to hide the footer and show the bottom nav bar in dashboard on mobile
+  document.body.classList.toggle('in-dashboard', viewName === 'dashboard');
 }
 
 /* VCF File Export */

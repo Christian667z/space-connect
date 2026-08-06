@@ -1289,6 +1289,53 @@
 
             </div>
         </div>
+
+        <!-- ── Mobile Bottom Navigation Bar (visible only on small screens) ── -->
+        <nav id="dash-bottom-nav" class="dash-bottom-nav" aria-label="Navigation mobile">
+            <button class="dash-bottom-item active" data-tab="overview" aria-label="Accueil">
+                <i class="fa-solid fa-house-chimney"></i>
+                <span>ACCUEIL</span>
+            </button>
+            <button class="dash-bottom-item" data-tab="contacts" aria-label="Contacts">
+                <i class="fa-solid fa-address-book"></i>
+                <span>CONTACTS</span>
+            </button>
+            <button class="dash-bottom-item" data-tab="autosync" aria-label="Auto-Sync">
+                <i class="fa-solid fa-bolt"></i>
+                <span>AUTO-SYNC</span>
+            </button>
+            <button class="dash-bottom-item" data-tab="download" aria-label="Télécharger">
+                <i class="fa-solid fa-download"></i>
+                <span>TÉLÉCHARGER</span>
+            </button>
+            <button class="dash-bottom-item" id="dash-bottom-more-btn" aria-label="Plus">
+                <i class="fa-solid fa-ellipsis"></i>
+                <span>PLUS</span>
+            </button>
+        </nav>
+
+        <!-- Overlay that closes the More sheet when tapped outside -->
+        <div id="dash-more-overlay" class="dash-more-overlay"></div>
+
+        <!-- More Sheet — slides up over the bottom nav -->
+        <div id="dash-more-sheet" class="dash-more-sheet" role="dialog" aria-modal="true" aria-label="Plus d'options">
+            <div class="dash-more-sheet-handle"></div>
+            <div class="dash-more-sheet-inner">
+                <button class="dash-more-item" data-tab="user-list">
+                    <i class="fa-solid fa-users-rectangle"></i> Annuaire Global
+                </button>
+                <button class="dash-more-item" data-tab="reports">
+                    <i class="fa-solid fa-headset"></i> Assistance &amp; Support
+                </button>
+                <button class="dash-more-item" data-tab="account">
+                    <i class="fa-solid fa-sliders"></i> Paramètres Compte
+                </button>
+                <button class="dash-more-item" onclick="switchView('landing'); closeMoreSheet();">
+                    <i class="fa-solid fa-arrow-left"></i> Retour à l'accueil
+                </button>
+            </div>
+        </div>
+
     </main>
 
     <!-- GOOGLE SIGN IN MODAL -->

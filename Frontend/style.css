@@ -2850,3 +2850,163 @@ img, svg, canvas, video {
     height: 130px;
   }
 }
+
+/* ── Mobile Bottom Navigation Bar ────────────────────────────────────────────
+   Visible only inside the SaaS dashboard on screens ≤ 768 px.
+   body.in-dashboard is toggled by switchView() in app.js.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Hidden by default (desktop & landing page) */
+.dash-bottom-nav,
+.dash-more-overlay,
+.dash-more-sheet {
+  display: none;
+}
+
+@media (max-width: 768px) {
+
+  /* Hide the sidebar — the bottom bar replaces it */
+  body.in-dashboard .dash-sidebar {
+    display: none !important;
+  }
+
+  /* Give the content room above the fixed bar */
+  body.in-dashboard .dash-main-area {
+    padding-bottom: 76px !important;
+  }
+
+  /* Hide the large site footer inside the dashboard */
+  body.in-dashboard .footer-main {
+    display: none !important;
+  }
+
+  /* ── Bottom Nav Bar ── */
+  body.in-dashboard .dash-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 900;
+    background: #0a080d;
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .dash-bottom-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0.6rem 0.2rem 0.5rem;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.38);
+    font-family: inherit;
+    font-size: 0.57rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .dash-bottom-item i {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .dash-bottom-item.active {
+    color: #d4a515;   /* gold, matching the reference screenshot */
+  }
+
+  .dash-bottom-item:not(.active):active {
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  /* ── Overlay (dims content when the More sheet is open) ── */
+  body.in-dashboard .dash-more-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 910;
+    background: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  body.in-dashboard .dash-more-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ── More Sheet (slides up from the bottom) ── */
+  body.in-dashboard .dash-more-sheet {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 920;
+    background: #100d18;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 22px 22px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  body.in-dashboard .dash-more-sheet.open {
+    transform: translateY(0);
+  }
+
+  .dash-more-sheet-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 0.85rem auto 0.25rem;
+  }
+
+  .dash-more-sheet-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem 1.1rem 1.5rem;
+  }
+
+  .dash-more-item {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    width: 100%;
+    padding: 0.9rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 0.93rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .dash-more-item:active {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .dash-more-item i {
+    width: 22px;
+    text-align: center;
+    color: var(--accent-red-bright);
+    font-size: 1rem;
+  }
+
+} /* end mobile bottom nav */
