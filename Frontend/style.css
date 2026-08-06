@@ -366,6 +366,19 @@ h1, h2, h3, h4 {
   border-color: rgba(229, 9, 20, 0.4);
 }
 
+/* ── "EXPORTER VCF" action button — strong contrast, distinct from btn-red ── */
+.btn-download-vcf-action {
+  background: #121212 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.btn-download-vcf-action:hover {
+  background: #1e1e1e !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  color: #ffffff !important;
+}
+
 /* Pill Badges */
 .tag-direct, .tag-green-pill, .tag-red-pill {
   display: inline-flex;
@@ -2994,7 +3007,7 @@ img, svg, canvas, video {
   }
 
   .dash-bottom-item.active {
-    color: #d4a515;   /* gold, matching the reference screenshot */
+    color: var(--accent-red-bright);   /* app primary red */
   }
 
   .dash-bottom-item:not(.active):active {
