@@ -53,10 +53,10 @@ router.get('/vcf', requireAuth, async (req, res) => {
     if (contacts && contacts.length > 0) {
       contacts.forEach(c => {
         const name = formatOgName(c.full_name);
-        vcfContent += `BEGIN:VCARD\nVERSION:3.0\nFN:${name}\nTEL;TYPE=CELL:${c.country_code}${c.phone_number}\nEND:VCARD\n\n`;
+        vcfContent += `BEGIN:VCARD\r\nVERSION:3.0\r\nFN:${name}\r\nTEL;TYPE=CELL:${c.country_code}${c.phone_number}\r\nEND:VCARD\r\n\r\n`;
       });
     } else {
-      vcfContent = `BEGIN:VCARD\nVERSION:3.0\nFN:OG SpaceConnect Support\nTEL;TYPE=CELL:+50935672037\nEND:VCARD\n\n`;
+      vcfContent = `BEGIN:VCARD\r\nVERSION:3.0\r\nFN:OG SpaceConnect Support\r\nTEL;TYPE=CELL:+50935672037\r\nEND:VCARD\r\n\r\n`;
     }
 
     res.setHeader('Content-Type', 'text/vcard; charset=utf-8');

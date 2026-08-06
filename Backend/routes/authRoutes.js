@@ -216,9 +216,15 @@ router.post('/refresh', async (req, res) => {
       return res.status(500).json({ success: false, message: 'Erreur de déchiffrement du token.' });
     }
 
-    // Mint a new access token
-    oauth2Client.setCredentials({ refresh_token: refreshToken });
-    const { credentials } = await oauth2Client.refreshAccessToken();
+    // Mint a new access token — use a fresh client to avoid mutating the shared global instance
+    const { google } = require('googleapis');
+    const freshClient = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+    freshClient.setCredentials({ refresh_token: refreshToken });
+    const { credentials } = await freshClient.refreshAccessToken();
 
     if (!credentials?.access_token) {
       throw new Error('Google did not return a new access token.');

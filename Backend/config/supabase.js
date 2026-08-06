@@ -15,7 +15,7 @@ if (!process.env.SUPABASE_URL) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
-  realtime: { transport: { WebSocket } }
+  realtime: { transport: WebSocket }   // ws constructor passed directly — required on Node 20 which lacks native WebSocket
 });
 
 module.exports = supabase;

@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "migrate": "node migrate.js",
+    "migrate:dry": "node migrate.js --dry-run"
   },
   "keywords": [
     "space-connect",

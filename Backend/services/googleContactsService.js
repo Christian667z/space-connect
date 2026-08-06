@@ -71,13 +71,18 @@ async function syncContactsToGoogleAccount(userId, refreshToken) {
 
     const peopleService = google.people({ version: 'v1', auth: client });
 
-    // Fetch existing contacts from user's Google Contacts to avoid duplicates
+    // Fetch existing contacts from user's Google Contacts to avoid duplicates.
+    // Paginate through all pages — the API max pageSize is 1000 per page.
+    // If the listing fails we abort rather than proceeding with an empty set,
+    // which would create a duplicate for every community contact.
     const existingPhones = new Set();
-    try {
+    let pageToken;
+    do {
       const existingRes = await peopleService.people.connections.list({
         resourceName: 'people/me',
         personFields: 'phoneNumbers,names',
-        pageSize: 1000
+        pageSize: 1000,
+        ...(pageToken ? { pageToken } : {})
       });
       const connections = existingRes.data.connections || [];
       connections.forEach(conn => {
@@ -90,9 +95,8 @@ async function syncContactsToGoogleAccount(userId, refreshToken) {
           });
         }
       });
-    } catch (e) {
-      console.warn('⚠️ Could not fetch existing Google Contacts list prior to sync:', e.message);
-    }
+      pageToken = existingRes.data.nextPageToken;
+    } while (pageToken);
 
     // Fetch only the columns needed for sync
     const { data: communityContacts, error } = await supabase
@@ -103,7 +107,7 @@ async function syncContactsToGoogleAccount(userId, refreshToken) {
 
     let syncedCount = 0;
 
-    for (const contact of communityContacts) {
+    for (const contact of (communityContacts || [])) {
       try {
         const fullPhone = `${contact.country_code}${contact.phone_number}`.replace(/\s+/g, '').replace(/[^\d+]/g, '');
         if (existingPhones.has(fullPhone)) {

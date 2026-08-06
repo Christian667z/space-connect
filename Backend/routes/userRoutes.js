@@ -54,10 +54,10 @@ router.post('/phone', requireAuth, async (req, res) => {
     const userId = req.user.id;   // always from verified token
     const { countryCode, phoneNumber, fullName } = req.body;
 
-    if (!phoneNumber || typeof phoneNumber !== 'string' || phoneNumber.trim().length < 4) {
+    if (!phoneNumber || typeof phoneNumber !== 'string' || !/^\d{4,15}$/.test(phoneNumber.trim())) {
       return res.status(400).json({
         success: false,
-        message: 'phoneNumber est requis (min 4 chiffres).'
+        message: 'phoneNumber est requis et doit contenir entre 4 et 15 chiffres.'
       });
     }
     if (countryCode && !/^\+\d{1,4}$/.test(countryCode.trim())) {
@@ -113,43 +113,21 @@ router.post('/phone', requireAuth, async (req, res) => {
     if (profileErr) throw profileErr;
 
     // 2. Update the community directory entry.
-    //    We use select-then-update-or-insert because the schema may not have a
-    //    UNIQUE constraint on contacts.user_id (the DB schema should add one via
-    //    the updated schema.sql, but we guard against missing it at the app level).
-    const vcfString = `BEGIN:VCARD\nVERSION:3.0\nFN:${formattedName}\nTEL;TYPE=CELL:${safeCode}${safePhone}\nEND:VCARD`;
+    //    Uses upsert on user_id to avoid the race condition of select-then-insert
+    //    (two concurrent requests could both see no row and both try to insert).
+    const vcfString = `BEGIN:VCARD\r\nVERSION:3.0\r\nFN:${formattedName}\r\nTEL;TYPE=CELL:${safeCode}${safePhone}\r\nEND:VCARD`;
 
-    const { data: existingContact } = await supabase
+    const { error: contactErr } = await supabase
       .from('contacts')
-      .select('id')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (existingContact) {
-      // Row exists — update it.
-      const { error: contactErr } = await supabase
-        .from('contacts')
-        .update({
-          full_name    : formattedName,
-          phone_number : safePhone,
-          country_code : safeCode,
-          vcf_string   : vcfString,
-          updated_at   : new Date()
-        })
-        .eq('user_id', userId);
-      if (contactErr) throw contactErr;
-    } else {
-      // No row yet — insert one.
-      const { error: contactErr } = await supabase
-        .from('contacts')
-        .insert({
-          user_id      : userId,
-          full_name    : formattedName,
-          phone_number : safePhone,
-          country_code : safeCode,
-          vcf_string   : vcfString
-        });
-      if (contactErr) throw contactErr;
-    }
+      .upsert({
+        user_id      : userId,
+        full_name    : formattedName,
+        phone_number : safePhone,
+        country_code : safeCode,
+        vcf_string   : vcfString,
+        updated_at   : new Date()
+      }, { onConflict: 'user_id' });
+    if (contactErr) throw contactErr;
 
     // Count slots used after the save
     const { count: slotsUsed } = await supabase
