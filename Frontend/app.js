@@ -1059,7 +1059,7 @@ function updateAuthUI() {
         <img src="${appState.currentUser.avatar}" class="nav-pill-avatar" alt="Avatar">
         <span class="nav-pill-name">${appState.currentUser.name}</span>
       </div>
-      <button class="btn btn-red btn-sm nav-saas-btn" onclick="switchView('dashboard')">Mon Espace SaaS</button>
+      <button class="btn btn-red btn-sm nav-saas-btn" onclick="switchView('dashboard')"><i class="fa-solid fa-table-columns"></i><span class="nav-saas-label"> Mon Espace SaaS</span></button>
     `;
     if (unauthNotice) unauthNotice.style.display = 'none';
     if (authContent) authContent.style.display = 'block';

@@ -2481,34 +2481,64 @@ img, svg, canvas, video {
   /* nav-brand: never shrinks, never overflows */
   .nav-brand {
     flex-shrink: 0;
+    min-width: 0;
   }
 
-  /* nav-actions / auth container: flexible, no overflow */
+  /* nav-actions / auth container: right-aligned, cannot grow past half the bar */
   .nav-actions,
   #nav-auth-container {
     display: flex;
     align-items: center;
     flex-wrap: nowrap;
     gap: 6px !important;
-    max-width: calc(100vw - 130px);
+    max-width: calc(100vw - 160px); /* guarantee logo side always has room */
     overflow: hidden;
+    flex-shrink: 1;
   }
 
-  /* Profile pill: hide name, keep avatar */
+  /* Profile pill: avatar only — hide name and tighten padding */
   .nav-user-pill {
     padding: 0.25rem !important;
     gap: 0 !important;
+    flex-shrink: 0;
   }
 
   .nav-pill-name {
     display: none;
   }
 
-  /* "Mon Espace SaaS" button: tighter padding + smaller text */
+  /* "Mon Espace SaaS" button: icon only — hide the label text */
   .nav-saas-btn {
-    padding: 0.35rem 0.6rem !important;
-    font-size: 0.72rem !important;
+    padding: 0.4rem 0.55rem !important;
+    font-size: 0.85rem !important;
     white-space: nowrap;
+    flex-shrink: 0;
+    gap: 0 !important;
+  }
+
+  .nav-saas-label {
+    display: none;
+  }
+
+  /* ── Hero section: tighten top gap, enforce flex-column centering ── */
+  .spa-view {
+    padding-top: 64px !important; /* navbar height only — no extra gap */
+  }
+
+  .main-hero-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.25rem 1rem 2rem !important;
+  }
+
+  .main-hero-header .hero-main-title,
+  .main-hero-header .hero-main-subtitle,
+  .main-hero-header .hero-mini-badges,
+  .main-hero-header .hero-actions-bar {
+    text-align: center;
+    width: 100%;
   }
 }
 
