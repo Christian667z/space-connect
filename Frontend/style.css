@@ -1565,8 +1565,8 @@ h1, h2, h3, h4 {
   .nav-brand { font-size: 1rem; gap: 0.4rem; }
   .nav-brand img { width: 26px; height: 26px; }
   .nav-actions { gap: 0.35rem; }
-  .nav-actions a[href="privacy.html"],
-  .nav-actions a[href="terms.html"],
+  .nav-actions a[href="/privacy"],
+  .nav-actions a[href="/terms"],
   .nav-actions a[href="#social-section"] {
     display: none !important;
   }
@@ -2394,8 +2394,8 @@ img, svg, canvas, video {
     gap: 0.35rem !important;
   }
   /* Hide non-critical navigation links on mobile view */
-  .nav-actions a[href="privacy.html"],
-  .nav-actions a[href="terms.html"],
+  .nav-actions a[href="/privacy"],
+  .nav-actions a[href="/terms"],
   .nav-actions a[href="#social-section"] {
     display: none !important;
   }
@@ -2625,6 +2625,12 @@ img, svg, canvas, video {
 @media (max-width: 480px) {
   .navbar {
     padding: 0 0.5rem !important;
+  }
+
+  /* On the smallest screens keep only the primary red CTA in the header.
+     The dark "SE CONNECTER" button is the same action — one button is enough. */
+  #nav-auth-container .btn-dark.btn-google-login {
+    display: none !important;
   }
   .hero-main-title {
     font-size: 1.65rem !important;
