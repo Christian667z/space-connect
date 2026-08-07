@@ -115,7 +115,7 @@ async function syncContactsToGoogleAccount(userId, refreshToken) {
         await peopleService.people.createContact({
           requestBody: {
             names: [
-              { givenName: ogFormattedName, familyName: 'SpaceConnect' }
+              { givenName: ogFormattedName }
             ],
             phoneNumbers: [
               { value: `${contact.country_code} ${contact.phone_number}`, type: 'mobile' }

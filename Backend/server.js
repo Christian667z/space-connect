@@ -89,11 +89,11 @@ app.use('/api/contacts', contactsRoutes);
 app.get('/api/stats', async (req, res) => {
   const supabase = require('./config/supabase');
   try {
-    const now       = new Date();
-    const todayISO  = now.toISOString().slice(0, 10);
+    const now        = new Date();
+    const todayISO   = now.toISOString().slice(0, 10);
     const weekAgoISO = new Date(now - 7 * 24 * 3600 * 1000).toISOString();
 
-    const [countRes, recentRes, todayRes, weekRes] = await Promise.all([
+    const [countRes, recentRes, todayRes, weekRes, syncRes] = await Promise.all([
       supabase.from('contacts').select('country_code, created_at'),
       supabase.from('contacts')
         .select('full_name, country_code')
@@ -104,7 +104,10 @@ app.get('/api/stats', async (req, res) => {
         .gte('created_at', `${todayISO}T00:00:00.000Z`),
       supabase.from('contacts')
         .select('id', { count: 'exact', head: true })
-        .gte('created_at', weekAgoISO)
+        .gte('created_at', weekAgoISO),
+      supabase.from('sync_logs')
+        .select('contacts_count')
+        .eq('status', 'SUCCESS')
     ]);
 
     const contacts       = countRes.data || [];
@@ -113,6 +116,7 @@ app.get('/api/stats', async (req, res) => {
     const countryCodes   = [...new Set(contacts.map(c => c.country_code).filter(Boolean))].slice(0, 4);
     const newToday       = todayRes.count  || 0;
     const newThisWeek    = weekRes.count   || 0;
+    const syncedContacts = (syncRes.data || []).reduce((sum, row) => sum + (row.contacts_count || 0), 0);
 
     res.json({
       success       : true,
@@ -121,11 +125,21 @@ app.get('/api/stats', async (req, res) => {
       countryCodes,
       newToday,
       newThisWeek,
+      syncedContacts,
       recentMembers : recentRes.data || []
     });
   } catch (err) {
     console.error('❌ Stats error:', err.message);
-    res.json({ success: true, memberCount: 0, countriesCount: 0, recentMembers: [] });
+    res.json({
+      success       : true,
+      memberCount   : 0,
+      countriesCount: 0,
+      countryCodes  : [],
+      newToday      : 0,
+      newThisWeek   : 0,
+      syncedContacts: 0,
+      recentMembers : []
+    });
   }
 });
 

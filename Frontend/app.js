@@ -241,14 +241,13 @@ function initGoogleOAuth() {
 
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
-    scope: 'https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/contacts',
+    scope: 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
     callback: async (tokenResponse) => {
       if (tokenResponse.access_token) {
         console.log("🔑 Access Token Google GIS reçu.");
         appState.googleAccessToken = tokenResponse.access_token;
 
-        // Register the token server-side when Supabase is configured. The
-        // client-side profile flow remains available while it is not.
+        // Register the token server-side when Supabase is configured.
         try {
           const registration = await registerGoogleToken(tokenResponse.access_token);
           if (registration?.profile?.id) {
@@ -259,8 +258,6 @@ function initGoogleOAuth() {
         }
 
         // Fetch profile info (name, email, picture), then open the dashboard.
-        // Wrapped in try/catch so a transient Google API failure never silently
-        // blocks the UI from updating.
         try {
           await fetchGoogleUserProfile(tokenResponse.access_token);
         } catch (profileErr) {
@@ -268,8 +265,7 @@ function initGoogleOAuth() {
           showToast("Profil Google non chargé. Réessayez.", 'fa-solid fa-circle-exclamation');
         }
 
-        // Contact sync is non-blocking and may require additional consent.
-        await fetchGoogleContacts(tokenResponse.access_token);
+        fetchLiveStats();
         fetchDirectoryContacts();
       } else if (tokenResponse.error) {
         console.error("❌ Erreur Google GIS :", tokenResponse.error);
@@ -429,23 +425,24 @@ async function fetchUserDashboardStats(token) {
       elEdits.style.color = editsRemaining <= 0 ? 'var(--accent-red-bright)' : '';
     }
 
-    // Pre-fill the phone form with stored values
-    const storedPhone = profile.phone_number;
-    const storedCode  = profile.country_code;
-    if (storedPhone) {
-      const phoneInput = document.getElementById('input-phone-number');
-      const codeSelect = document.getElementById('select-country-code');
-      if (phoneInput && !phoneInput.value) phoneInput.value = storedPhone;
-      if (codeSelect && storedCode)        codeSelect.value = storedCode;
-    }
+    // Pre-fill the phone form and name input with stored values
+    const storedPhone = profile.phone_number || '';
+    const storedCode  = profile.country_code || '+509';
+    const storedName  = profile.full_name ? formatOgName(profile.full_name) : (appState.currentUser?.name || '');
+
+    const phoneInput = document.getElementById('input-phone-number');
+    const codeSelect = document.getElementById('select-country-code');
+    const nameInput  = document.getElementById('input-full-name');
+
+    if (phoneInput) phoneInput.value = storedPhone;
+    if (codeSelect && storedCode) codeSelect.value = storedCode;
+    if (nameInput)  nameInput.value  = storedName;
 
     // Update slot card preview
-    if (profile.full_name) {
-      const slotName  = document.getElementById('slot-card-name');
-      const slotPhone = document.getElementById('slot-card-phone');
-      if (slotName && profile.full_name)  slotName.textContent  = profile.full_name;
-      if (slotPhone && storedPhone)       slotPhone.textContent = `${profile.country_code ?? ''} ${storedPhone}`;
-    }
+    const slotName  = document.getElementById('slot-card-name');
+    const slotPhone = document.getElementById('slot-card-phone');
+    if (slotName)  slotName.textContent  = storedName || 'Votre Fiche Contact';
+    if (slotPhone) slotPhone.textContent = storedPhone ? `${storedCode} ${storedPhone}` : 'Aucun numéro enregistré';
 
     // Disable the save button if no edits left
     const saveBtn = document.getElementById('btn-save-phone-sync');
@@ -665,6 +662,9 @@ function initAuthLogic() {
             saveBtn.disabled = data.editsRemaining <= 0;
             saveBtn.title    = data.editsRemaining <= 0 ? 'Limite de modifications atteinte' : '';
           }
+
+          fetchLiveStats();
+          fetchDirectoryContacts();
         } else {
           showToast(data.message || 'Erreur lors de la sauvegarde.', 'fa-solid fa-circle-exclamation');
         }
@@ -677,8 +677,10 @@ function initAuthLogic() {
     }
   });
 
-  document.querySelectorAll('#btn-refresh-stats, #btn-refresh-stats-sync, #btn-refresh-stats-dl, #btn-refresh-stats-rep, #btn-refresh-stats-acc').forEach(btn => {
+  document.querySelectorAll('#btn-refresh-stats, #btn-refresh-stats-sync, #btn-refresh-stats-dl, #btn-refresh-stats-rep, #btn-refresh-stats-acc, #btn-refresh-user-list').forEach(btn => {
     btn?.addEventListener('click', () => {
+      fetchLiveStats();
+      fetchDirectoryContacts();
       showToast('Données et annuaire rafraîchis !', 'fa-solid fa-rotate-right');
     });
   });

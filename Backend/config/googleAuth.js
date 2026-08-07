@@ -16,12 +16,16 @@ const oauth2Client = new google.auth.OAuth2(
   GOOGLE_REDIRECT_URI
 );
 
-// Scopes required to manage Google Contacts & authenticate user
-const SCOPES = [
+// Scopes required for authentication and Google Contacts sync
+const SCOPES_LOGIN = [
+  'https://www.googleapis.com/auth/userinfo.profile',
+  'https://www.googleapis.com/auth/userinfo.email'
+];
+
+const SCOPES_SYNC = [
   'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/contacts',
-  'https://www.googleapis.com/auth/contacts.readonly'
+  'https://www.googleapis.com/auth/contacts'
 ];
 
 /**
@@ -43,13 +47,14 @@ function buildRedirectUri(req) {
  * Pass a per-request redirectUri so the URI always matches the live host.
  *
  * @param {string} [redirectUri]  — override the default redirect URI
+ * @param {boolean} [includeSync] — set true to request Google Contacts management scope
  * @returns {string}
  */
-function getGoogleAuthUrl(redirectUri) {
+function getGoogleAuthUrl(redirectUri, includeSync = false) {
   const params = {
     access_type: 'offline',
     prompt     : 'consent',
-    scope      : SCOPES
+    scope      : includeSync ? SCOPES_SYNC : SCOPES_LOGIN
   };
   if (redirectUri) params.redirect_uri = redirectUri;
   return oauth2Client.generateAuthUrl(params);
@@ -59,5 +64,8 @@ module.exports = {
   oauth2Client,
   getGoogleAuthUrl,
   buildRedirectUri,
-  GOOGLE_CLIENT_ID
+  GOOGLE_CLIENT_ID,
+  SCOPES_LOGIN,
+  SCOPES_SYNC
 };
+

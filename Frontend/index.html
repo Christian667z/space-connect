@@ -619,7 +619,7 @@
                                         <span>Membres Engagés</span>
                                         <i class="fa-solid fa-user-group"></i>
                                     </div>
-                                    <div class="stat-quad-val" id="stat-network-members">2</div>
+                                    <div class="stat-quad-val" id="stat-network-members">0</div>
                                     <div class="stat-quad-footer">
                                         <span class="badge-vs">~ 100 %</span> réseau actif
                                     </div>
@@ -630,8 +630,8 @@
                                         <span>Inscriptions du Jour</span>
                                         <i class="fa-solid fa-wand-magic-sparkles"></i>
                                     </div>
-                                    <div class="stat-quad-val">1</div>
-                                    <div class="stat-quad-footer">
+                                    <div class="stat-quad-val" id="stat-new-today">0</div>
+                                    <div class="stat-quad-footer" id="stat-new-today-footer">
                                         <span>Flux direct quotidien</span>
                                     </div>
                                 </div>
@@ -641,9 +641,9 @@
                                         <span>Croissance Hebdo</span>
                                         <i class="fa-solid fa-chart-line"></i>
                                     </div>
-                                    <div class="stat-quad-val">2</div>
+                                    <div class="stat-quad-val" id="stat-week-total">0</div>
                                     <div class="stat-quad-footer">
-                                        <span class="badge-vs">+100 %</span> cette semaine
+                                        <span class="badge-vs" id="stat-week-pct">~ 0 %</span> cette semaine
                                     </div>
                                 </div>
 
@@ -652,9 +652,9 @@
                                         <span>Régions & Indicatifs</span>
                                         <i class="fa-solid fa-earth-americas"></i>
                                     </div>
-                                    <div class="stat-quad-val">2</div>
-                                    <div class="stat-quad-footer">
-                                        <span>Haïti (+509), USA (+1)</span>
+                                    <div class="stat-quad-val" id="stat-pays-actifs">0</div>
+                                    <div class="stat-quad-footer" id="stat-pays-footer">
+                                        <span>Aucune région</span>
                                     </div>
                                 </div>
                             </div>
@@ -714,10 +714,10 @@
                                     <div class="circle-progress-box">
                                         <svg class="circle-progress-svg" viewBox="0 0 140 140">
                                             <circle class="circle-bg" cx="70" cy="70" r="60"/>
-                                            <circle class="circle-val" cx="70" cy="70" r="60" style="stroke-dashoffset: 260;"/>
+                                            <circle class="circle-val" id="circle-progress-val" cx="70" cy="70" r="60" style="stroke-dashoffset: 260;"/>
                                         </svg>
                                         <div class="circle-center-text">
-                                            <span style="font-size: 1.5rem; font-weight: 900;">2</span><span style="font-size: 0.8rem; color: var(--text-muted);">/10</span>
+                                            <span style="font-size: 1.5rem; font-weight: 900;" id="stat-growth-current">0</span><span style="font-size: 0.8rem; color: var(--text-muted);">/10</span>
                                         </div>
                                     </div>
 
@@ -796,8 +796,8 @@
                                 <!-- Contact Cards Selector -->
                                 <div class="contact-slots-container">
                                     <div class="contact-slot-card selected">
-                                        <h5 style="font-size: 0.95rem; font-weight: 800;" id="slot-card-name">OG Asta | Développeur</h5>
-                                        <p style="font-size: 0.8rem; color: var(--text-muted);" id="slot-card-phone">+509 3567-2037</p>
+                                        <h5 style="font-size: 0.95rem; font-weight: 800;" id="slot-card-name">Votre Fiche Contact</h5>
+                                        <p style="font-size: 0.8rem; color: var(--text-muted);" id="slot-card-phone">Aucun numéro enregistré</p>
                                     </div>
                                     <div class="contact-slot-card add-new" onclick="showToast('Option multi-fiches disponible très bientôt !', 'fa-solid fa-star')">
                                         <i class="fa-solid fa-plus" style="margin-right: 0.5rem;"></i> AJOUTER UNE FICHE
@@ -808,7 +808,7 @@
                                 <form id="form-phone-sync">
                                     <div style="margin-bottom: 1.25rem;">
                                         <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem;">NOM COMPLET (AFFICHÉ)</label>
-                                        <input type="text" id="input-full-name" class="btn btn-dark" style="width: 100%; text-align: left; padding: 0.85rem 1rem; border-radius: 12px; font-size: 1rem;" value="OG Asta | Développeur" placeholder="OG VotreNom" required>
+                                        <input type="text" id="input-full-name" class="btn btn-dark" style="width: 100%; text-align: left; padding: 0.85rem 1rem; border-radius: 12px; font-size: 1rem;" placeholder="OG VotreNom" required>
                                     </div>
 
                                     <div style="margin-bottom: 1.5rem;">
@@ -819,11 +819,11 @@
                                                 <option value="+1">🇺🇸 US/CA (+1)</option>
                                                 <option value="+33">🇫🇷 FR (+33)</option>
                                             </select>
-                                            <input type="tel" id="input-phone-number" class="btn btn-dark" style="flex: 1; text-align: left; padding: 0.85rem 1rem; border-radius: 12px; font-size: 1rem;" value="3567 2037" required>
+                                            <input type="tel" id="input-phone-number" class="btn btn-dark" style="flex: 1; text-align: left; padding: 0.85rem 1rem; border-radius: 12px; font-size: 1rem;" placeholder="3567 2037" required>
                                         </div>
                                     </div>
 
-                                    <button type="submit" class="btn btn-red" style="width: 100%;"><i class="fa-solid fa-floppy-disk"></i> Sauvegarder ma fiche contact</button>
+                                    <button type="submit" class="btn btn-red" id="btn-save-phone-sync" style="width: 100%;"><i class="fa-solid fa-floppy-disk"></i> Sauvegarder ma fiche contact</button>
                                 </form>
 
                             </div>

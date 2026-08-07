@@ -95,7 +95,8 @@ router.post('/google/token', async (req, res) => {
 router.get('/google/url', (req, res) => {
   try {
     const redirectUri = buildRedirectUri(req);
-    const authUrl     = getGoogleAuthUrl(redirectUri);
+    const includeSync = req.query.scope === 'sync';
+    const authUrl     = getGoogleAuthUrl(redirectUri, includeSync);
     res.json({ success: true, url: authUrl });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Impossible de générer l\'URL OAuth.' });
