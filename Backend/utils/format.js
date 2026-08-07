@@ -14,10 +14,10 @@ function formatOgName(name) {
   if (!name || typeof name !== 'string') return 'OG Membre Space';
   const trimmed = name.trim();
   if (!trimmed) return 'OG Membre Space';
-  if (/^og\b/i.test(trimmed)) {
-    return trimmed.replace(/^og\b\s*/i, 'OG ').trim();
-  }
-  return `OG ${trimmed}`;
+  const cleaned = trimmed.replace(/^og\b\s*/i, '').trim();
+  if (!cleaned) return 'OG Membre Space';
+  return `OG ${cleaned}`;
 }
 
 module.exports = { formatOgName };
+

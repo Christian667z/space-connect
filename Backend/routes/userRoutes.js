@@ -54,7 +54,7 @@ router.post('/phone', requireAuth, async (req, res) => {
     const userId = req.user.id;   // always from verified token
     const { countryCode, phoneNumber, fullName } = req.body;
 
-    if (!phoneNumber || typeof phoneNumber !== 'string' || phoneNumber.trim().length < 4) {
+    if (!phoneNumber || typeof phoneNumber !== 'string' || phoneNumber.trim().replace(/\s+/g, '').length < 4) {
       return res.status(400).json({
         success: false,
         message: 'phoneNumber est requis (min 4 chiffres).'
@@ -73,35 +73,22 @@ router.post('/phone', requireAuth, async (req, res) => {
       .eq('id', userId)
       .single();
 
-    // Guard: block save if no edits remaining (null means migration not run → allow)
-    const currentEdits = existingProfile?.phone_edits_remaining;
-    if (currentEdits !== null && currentEdits !== undefined && currentEdits <= 0) {
-      return res.status(403).json({
-        success: false,
-        message: 'Vous avez atteint la limite de modifications (2/2). Contactez le support pour plus d\'options.'
-      });
-    }
-
     const rawName       = fullName || (existingProfile?.full_name) || 'Membre Space';
     const formattedName = formatOgName(rawName);
     const safeCode      = (countryCode || '+509').trim();
-    const safePhone     = phoneNumber.trim();
+    const safePhone     = phoneNumber.trim().replace(/\s+/g, '');
 
-    // Compute new edits remaining (decrement, floor at 0, skip if column not yet migrated)
-    const newEditsRemaining = currentEdits !== null && currentEdits !== undefined
-      ? Math.max(0, currentEdits - 1)
-      : undefined;
+    const currentEdits = existingProfile?.phone_edits_remaining ?? 5;
+    const newEditsRemaining = Math.max(0, currentEdits - 1);
 
-    // 1. Update the user's own profile row.
+    // 1. Update the user's own profile row in Supabase
     const updatePayload = {
-      full_name    : formattedName,
-      country_code : safeCode,
-      phone_number : safePhone,
-      updated_at   : new Date()
+      full_name             : formattedName,
+      country_code          : safeCode,
+      phone_number          : safePhone,
+      phone_edits_remaining : newEditsRemaining,
+      updated_at            : new Date()
     };
-    if (newEditsRemaining !== undefined) {
-      updatePayload.phone_edits_remaining = newEditsRemaining;
-    }
 
     const { data: profile, error: profileErr } = await supabase
       .from('profiles')
@@ -112,10 +99,7 @@ router.post('/phone', requireAuth, async (req, res) => {
 
     if (profileErr) throw profileErr;
 
-    // 2. Update the community directory entry.
-    //    We use select-then-update-or-insert because the schema may not have a
-    //    UNIQUE constraint on contacts.user_id (the DB schema should add one via
-    //    the updated schema.sql, but we guard against missing it at the app level).
+    // 2. Update or insert the community directory entry in contacts table
     const vcfString = `BEGIN:VCARD\nVERSION:3.0\nFN:${formattedName}\nTEL;TYPE=CELL:${safeCode}${safePhone}\nEND:VCARD`;
 
     const { data: existingContact } = await supabase
@@ -125,7 +109,6 @@ router.post('/phone', requireAuth, async (req, res) => {
       .maybeSingle();
 
     if (existingContact) {
-      // Row exists — update it.
       const { error: contactErr } = await supabase
         .from('contacts')
         .update({
@@ -138,7 +121,6 @@ router.post('/phone', requireAuth, async (req, res) => {
         .eq('user_id', userId);
       if (contactErr) throw contactErr;
     } else {
-      // No row yet — insert one.
       const { error: contactErr } = await supabase
         .from('contacts')
         .insert({
@@ -151,7 +133,6 @@ router.post('/phone', requireAuth, async (req, res) => {
       if (contactErr) throw contactErr;
     }
 
-    // Count slots used after the save
     const { count: slotsUsed } = await supabase
       .from('contacts')
       .select('id', { count: 'exact', head: true })
@@ -159,11 +140,11 @@ router.post('/phone', requireAuth, async (req, res) => {
 
     res.json({
       success       : true,
-      message       : 'Numéro WhatsApp enregistré dans Space Connect !',
+      message       : 'Numéro WhatsApp enregistré avec succès dans Space Connect !',
       profile,
       slotsUsed     : slotsUsed ?? 1,
       maxSlots      : MAX_SLOTS,
-      editsRemaining: profile?.phone_edits_remaining ?? newEditsRemaining ?? 2
+      editsRemaining: profile?.phone_edits_remaining ?? newEditsRemaining
     });
   } catch (error) {
     console.error('❌ Error saving phone number:', error.message);

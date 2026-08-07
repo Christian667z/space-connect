@@ -56,14 +56,25 @@ body {
   min-height: 100vh;
   position: relative;
   background-color: var(--bg-dark);
-  /* Dark Red Micro Grid Texture */
+  /* Dark Red Micro Grid Texture with animated glow effect */
   background-image: 
-    linear-gradient(to right, rgba(229, 9, 20, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(229, 9, 20, 0.03) 1px, transparent 1px);
+    linear-gradient(to right, rgba(229, 9, 20, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(229, 9, 20, 0.04) 1px, transparent 1px);
   background-size: 50px 50px;
   background-attachment: fixed;
   color: var(--text-main);
   line-height: 1.6;
+}
+
+#cyber-bg-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.9;
 }
 
 /* Ambient Radial Red Glow Orbs */
@@ -74,10 +85,11 @@ body::before {
   left: 20%;
   width: 650px;
   height: 650px;
-  background: radial-gradient(circle, rgba(229, 9, 20, 0.16) 0%, rgba(229, 9, 20, 0.02) 50%, transparent 70%);
-  filter: blur(70px);
+  background: radial-gradient(circle, rgba(229, 9, 20, 0.22) 0%, rgba(229, 9, 20, 0.04) 50%, transparent 70%);
+  filter: blur(75px);
   pointer-events: none;
   z-index: 0;
+  animation: auraPulseSlow 10s ease-in-out infinite alternate;
 }
 
 body::after {
@@ -87,10 +99,17 @@ body::after {
   right: -5%;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(139, 0, 0, 0.18) 0%, rgba(229, 9, 20, 0.02) 50%, transparent 70%);
-  filter: blur(80px);
+  background: radial-gradient(circle, rgba(139, 0, 0, 0.25) 0%, rgba(229, 9, 20, 0.03) 50%, transparent 70%);
+  filter: blur(85px);
   pointer-events: none;
   z-index: 0;
+  animation: auraPulseSlow 12s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes auraPulseSlow {
+  0% { transform: scale(1) translate(0, 0); opacity: 0.85; }
+  50% { transform: scale(1.12) translate(15px, -15px); opacity: 1; }
+  100% { transform: scale(1) translate(0, 0); opacity: 0.85; }
 }
 
 /* Custom Scrollbar */
@@ -260,16 +279,18 @@ h1, h2, h3, h4 {
   top: 0;
   left: 0;
   right: 0;
-  height: var(--topbar-height);
-  background: rgba(3, 2, 5, 0.92);
+  min-height: var(--topbar-height);
+  background: rgba(3, 2, 5, 0.94);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--border-card);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2.5rem;
-  z-index: 100;
+  gap: 8px;
+  padding: 0.6rem 2.5rem;
+  z-index: 1000;
 }
 
 .nav-brand {
@@ -280,6 +301,8 @@ h1, h2, h3, h4 {
   color: var(--text-main);
   font-weight: 800;
   font-size: 1.2rem;
+  flex-shrink: 0;
+  position: relative;
 }
 
 .nav-brand img {
@@ -290,8 +313,39 @@ h1, h2, h3, h4 {
 
 .nav-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: flex-end;
+  gap: 8px;
+  position: relative;
+}
+
+.nav-user-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.3rem 0.75rem 0.3rem 0.3rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-card);
+  max-width: 100%;
+}
+
+.nav-user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.nav-user-name {
+  font-weight: 700;
+  font-size: 0.825rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
 }
 
 /* Buttons */
@@ -2808,7 +2862,7 @@ img, svg, canvas, video {
 }
 
 /* ==========================================================================
-   PREVENT FLOATING CAPSULES FROM CAUSING HORIZONTAL SCROLL ON MOBILE
+   OPTIMIZED FLOATING CAPSULES FOR MOBILE & TABLET (No clipping, smooth glass depth)
    ========================================================================== */
 @media (max-width: 768px) {
   .hero-capsules-wrapper,
@@ -2816,8 +2870,15 @@ img, svg, canvas, video {
     overflow: hidden;
   }
   .floating-capsule {
-    display: none;
+    display: block;
+    opacity: 0.55;
   }
+  .capsule-1 { width: 140px; height: 38px; top: 7%; left: -25px; }
+  .capsule-2 { width: 120px; height: 32px; top: 21%; right: -20px; }
+  .capsule-3 { width: 100px; height: 28px; top: 46%; left: -15px; }
+  .capsule-4 { width: 160px; height: 42px; top: 60%; right: -30px; }
+  .capsule-5 { width: 95px;  height: 26px; top: 76%; left: 4%; }
+  .capsule-6 { width: 130px; height: 34px; top: 87%; right: 2%; }
 }
 
 /* ==========================================================================
@@ -2848,5 +2909,53 @@ img, svg, canvas, video {
   }
   .svg-chart-container {
     height: 130px;
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVE HEADER & MOBILE NAVBAR MEDIA QUERY (max-width: 600px)
+   ========================================================================== */
+@media (max-width: 600px) {
+  .navbar {
+    padding: 0.4rem 0.85rem;
+    min-height: 56px;
+    gap: 6px;
+    justify-content: space-between;
+  }
+
+  .nav-brand {
+    font-size: 0.95rem;
+    gap: 0.35rem;
+  }
+
+  .nav-brand img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .nav-actions {
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .nav-actions .btn {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.75rem;
+  }
+
+  /* Hide auxiliary navigation buttons on mobile to prevent clutter */
+  .nav-actions a.btn-dark:not(#nav-brand-btn) {
+    display: none;
+  }
+
+  /* Hide username text on mobile screens to preserve space and display avatar only */
+  .nav-user-name {
+    display: none;
+  }
+
+  .nav-user-pill {
+    padding: 0.2rem;
+    background: transparent;
+    border: none;
   }
 }

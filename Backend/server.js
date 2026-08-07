@@ -93,7 +93,8 @@ app.get('/api/stats', async (req, res) => {
     const todayISO   = now.toISOString().slice(0, 10);
     const weekAgoISO = new Date(now - 7 * 24 * 3600 * 1000).toISOString();
 
-    const [countRes, recentRes, todayRes, weekRes, syncRes] = await Promise.all([
+    const [profilesRes, countRes, recentRes, todayRes, weekRes, syncRes] = await Promise.all([
+      supabase.from('profiles').select('id', { count: 'exact', head: true }),
       supabase.from('contacts').select('country_code, created_at'),
       supabase.from('contacts')
         .select('full_name, country_code')
@@ -110,13 +111,16 @@ app.get('/api/stats', async (req, res) => {
         .eq('status', 'SUCCESS')
     ]);
 
-    const contacts       = countRes.data || [];
-    const memberCount    = contacts.length;
-    const countriesCount = new Set(contacts.map(c => c.country_code).filter(Boolean)).size;
-    const countryCodes   = [...new Set(contacts.map(c => c.country_code).filter(Boolean))].slice(0, 4);
-    const newToday       = todayRes.count  || 0;
-    const newThisWeek    = weekRes.count   || 0;
-    const syncedContacts = (syncRes.data || []).reduce((sum, row) => sum + (row.contacts_count || 0), 0);
+    const contacts          = countRes.data || [];
+    const dbContactsCount   = contacts.length;
+    const dbProfilesCount   = profilesRes.count || 0;
+    const memberCount       = Math.max(dbProfilesCount, dbContactsCount);
+
+    const countriesCount    = new Set(contacts.map(c => c.country_code).filter(Boolean)).size;
+    const countryCodes      = [...new Set(contacts.map(c => c.country_code).filter(Boolean))].slice(0, 4);
+    const newToday          = todayRes.count  || 0;
+    const newThisWeek       = weekRes.count   || 0;
+    const syncedContacts    = (syncRes.data || []).reduce((sum, row) => sum + (row.contacts_count || 0), 0);
 
     res.json({
       success       : true,

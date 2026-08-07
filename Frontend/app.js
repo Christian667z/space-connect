@@ -38,6 +38,7 @@ let googleReadyPromise;
 
 document.addEventListener('DOMContentLoaded', () => {
   populateCountrySelectors();   // ← world flags & dial codes first
+  initCyberCanvasBackground();  // ← high-performance Cyberpunk Canvas Mesh (No Stars)
   initFloatingCapsules();
   initFAQAccordion();
   initAuthLogic();
@@ -336,15 +337,17 @@ async function refreshGoogleToken() {
 
 /**
  * Trigger GIS Token Client Popup
+ * @param {boolean} includeSync - If true, requests the write contacts scope dynamically.
  */
-async function requestGoogleAuth() {
+async function requestGoogleAuth(includeSync = false) {
   // On mobile, GIS popups are blocked by the browser. Use the backend redirect
   // flow instead — Google redirects back to the app and the access token is
   // returned in the URL hash (#gat=...) so it never touches any server log.
   const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   if (isMobile) {
     try {
-      const res  = await fetch('/api/auth/google/url');
+      const urlParam = includeSync ? '?scope=sync' : '';
+      const res  = await fetch('/api/auth/google/url' + urlParam);
       const data = await res.json();
       if (data.success && data.url) {
         window.location.href = data.url;
@@ -369,7 +372,10 @@ async function requestGoogleAuth() {
 
   if (tokenClient) {
     try {
-      tokenClient.requestAccessToken({ prompt: '' });
+      const scope = includeSync
+        ? 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/contacts'
+        : 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
+      tokenClient.requestAccessToken({ scope, prompt: includeSync ? 'consent' : '' });
     } catch (error) {
       console.error('❌ Impossible de lancer Google GIS :', error);
       showToast("Impossible d'ouvrir la fenêtre Google. Autorisez les popups puis réessayez.", 'fa-solid fa-circle-exclamation');
@@ -444,12 +450,9 @@ async function fetchUserDashboardStats(token) {
     if (slotName)  slotName.textContent  = storedName || 'Votre Fiche Contact';
     if (slotPhone) slotPhone.textContent = storedPhone ? `${storedCode} ${storedPhone}` : 'Aucun numéro enregistré';
 
-    // Disable the save button if no edits left
+    // Ensure the save button remains active for profile updates
     const saveBtn = document.getElementById('btn-save-phone-sync');
-    if (saveBtn && editsRemaining <= 0) {
-      saveBtn.disabled = true;
-      saveBtn.title = 'Limite de modifications atteinte';
-    } else if (saveBtn) {
+    if (saveBtn) {
       saveBtn.disabled = false;
       saveBtn.title = '';
     }
@@ -512,6 +515,133 @@ async function fetchGoogleContacts(accessToken) {
   } catch (err) {
     console.warn("⚠️ Attention People API :", err.message);
   }
+}
+
+/* --------------------------------------------------------------------------
+   Interactive Cyberpunk Mesh & Energy Laser Canvas (No Stars)
+   Developed for High-End Desktop & Mobile Experience
+   -------------------------------------------------------------------------- */
+function initCyberCanvasBackground() {
+  const canvas = document.getElementById('cyber-bg-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  let width = 0;
+  let height = 0;
+  let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
+  const nodeCount = isMobile ? 22 : 48;
+  const maxDistance = isMobile ? 125 : 175;
+
+  let mouse = { x: -1000, y: -1000, radius: isMobile ? 110 : 190 };
+
+  window.addEventListener('mousemove', (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+
+  window.addEventListener('mouseleave', () => {
+    mouse.x = -1000;
+    mouse.y = -1000;
+  });
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+  }
+
+  resize();
+  window.addEventListener('resize', resize, { passive: true });
+
+  class CyberNode {
+    constructor() {
+      this.reset();
+    }
+    reset() {
+      this.x = Math.random() * width;
+      this.y = Math.random() * height;
+      this.vx = (Math.random() - 0.5) * (isMobile ? 0.35 : 0.55);
+      this.vy = (Math.random() - 0.5) * (isMobile ? 0.35 : 0.55);
+      this.radius = Math.random() * 1.8 + 1.2;
+      this.pulseSpeed = Math.random() * 0.03 + 0.01;
+      this.pulseFactor = Math.random() * Math.PI;
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+
+      if (this.x < 0) this.x = width;
+      if (this.x > width) this.x = 0;
+      if (this.y < 0) this.y = height;
+      if (this.y > height) this.y = 0;
+
+      this.pulseFactor += this.pulseSpeed;
+
+      // Smooth mouse attraction / repulsion
+      const dx = mouse.x - this.x;
+      const dy = mouse.y - this.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < mouse.radius && dist > 0) {
+        const force = (mouse.radius - dist) / mouse.radius;
+        this.x -= (dx / dist) * force * 1.5;
+        this.y -= (dy / dist) * force * 1.5;
+      }
+    }
+    draw() {
+      const alpha = 0.55 + Math.sin(this.pulseFactor) * 0.3;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 30, 39, ${alpha})`;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = 'rgba(229, 9, 20, 0.8)';
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  const nodes = [];
+  for (let i = 0; i < nodeCount; i++) {
+    nodes.push(new CyberNode());
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+
+    // Draw laser connection lines between close network nodes (No stars!)
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < maxDistance) {
+          const opacity = (1 - dist / maxDistance) * 0.38;
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.strokeStyle = `rgba(229, 9, 20, ${opacity})`;
+          ctx.lineWidth = opacity * 1.3;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Update & draw nodes
+    nodes.forEach(node => {
+      node.update();
+      node.draw();
+    });
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
 }
 
 /* --------------------------------------------------------------------------
@@ -791,9 +921,9 @@ function updateAuthUI() {
 
   if (appState.isAuthenticated && appState.currentUser) {
     authNav.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 0.6rem; background: rgba(255,255,255,0.05); padding: 0.35rem 0.8rem 0.35rem 0.35rem; border-radius: 9999px; border: 1px solid var(--border-card);">
-        <img src="${appState.currentUser.avatar}" style="width: 28px; height: 28px; border-radius: 50%;" alt="Avatar">
-        <span style="font-weight: 700; font-size: 0.825rem;">${appState.currentUser.name}</span>
+      <div class="nav-user-pill">
+        <img src="${appState.currentUser.avatar}" class="nav-user-avatar" alt="Avatar">
+        <span class="nav-user-name">${appState.currentUser.name}</span>
       </div>
       <button class="btn btn-red btn-sm" onclick="switchView('dashboard')">Mon Espace SaaS</button>
     `;
@@ -1416,10 +1546,13 @@ function initDirectoryListeners() {
   });
 
   document.getElementById('btn-directory-add-google')?.addEventListener('click', () => {
-    showToast('Ajout de la sélection à vos Google Contacts...', 'fa-solid fa-cloud-arrow-down');
-    setTimeout(() => {
-      showToast('Contacts synchronisés dans votre compte Google !', 'fa-solid fa-check');
-    }, 1200);
+    requestGoogleAuth(true);
+    showToast('Demande d\'autorisation Google Contacts...', 'fa-solid fa-cloud-arrow-down');
+  });
+
+  document.getElementById('btn-manual-google-sync')?.addEventListener('click', () => {
+    requestGoogleAuth(true);
+    showToast('Demande d\'autorisation Google Contacts...', 'fa-solid fa-bolt');
   });
 
   // Auto-refresh directory every 15 minutes (900,000 ms)

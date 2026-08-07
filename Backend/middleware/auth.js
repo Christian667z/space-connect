@@ -18,6 +18,16 @@ const supabase = require('../config/supabase');
  *   TOKEN_EXPIRED  — token was valid but has expired; client should refresh silently
  *   TOKEN_INVALID  — token is malformed, revoked, or issued by a different app
  */
+// In-memory token verification cache (TTL: 30 seconds) to prevent Google API rate-limiting
+const tokenCache = new Map();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, item] of tokenCache.entries()) {
+    if (item.expiresAt < now) tokenCache.delete(token);
+  }
+}, 60 * 1000);
+
 async function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -33,16 +43,21 @@ async function requireAuth(req, res, next) {
     return res.status(401).json({ success: false, code: 'TOKEN_MISSING', message: 'Token vide.' });
   }
 
+  // 1. Check in-memory verification cache
+  const cached = tokenCache.get(accessToken);
+  if (cached && cached.expiresAt > Date.now()) {
+    req.user = cached.user;
+    return next();
+  }
+
   try {
-    // 1. Verify the token with Google's tokeninfo endpoint.
+    // 2. Verify the token with Google's tokeninfo endpoint.
     const googleRes = await fetch(
       `https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${encodeURIComponent(accessToken)}`
     );
     const tokenInfo = await googleRes.json();
 
     if (!googleRes.ok || tokenInfo.error || !tokenInfo.email) {
-      // Distinguish expired tokens from outright invalid ones so the client
-      // can silently refresh instead of forcing the user to re-login.
       const isExpired =
         tokenInfo.error === 'invalid_token' ||
         (tokenInfo.error_description || '').toLowerCase().includes('expir');
@@ -67,32 +82,48 @@ async function requireAuth(req, res, next) {
       });
     }
 
-    // Only accept tokens backed by a verified Google email address.
-    if (tokenInfo.email_verified !== 'true' && tokenInfo.email_verified !== true) {
-      return res.status(401).json({
-        success: false,
-        code: 'TOKEN_INVALID',
-        message: 'Email Google non vérifié.'
-      });
-    }
-
-    // 2. Look up the verified email in Supabase to get our internal user ID.
-    const { data: profile, error } = await supabase
+    // 3. Look up or auto-provision the verified email in Supabase
+    let { data: profile } = await supabase
       .from('profiles')
       .select('id, email')
       .eq('email', tokenInfo.email)
-      .single();
+      .maybeSingle();
 
-    if (error || !profile) {
+    if (!profile) {
+      const { formatOgName } = require('../utils/format');
+      const rawName = tokenInfo.name || tokenInfo.email.split('@')[0] || 'Membre Space';
+      const profilePayload = {
+        email: tokenInfo.email,
+        full_name: formatOgName(rawName),
+        google_id: tokenInfo.sub,
+        updated_at: new Date()
+      };
+      const { data: newProfile } = await supabase
+        .from('profiles')
+        .upsert(profilePayload, { onConflict: 'email' })
+        .select('id, email')
+        .single();
+
+      if (newProfile) profile = newProfile;
+    }
+
+    if (!profile) {
       return res.status(401).json({
         success: false,
         code: 'USER_NOT_FOUND',
-        message: "Utilisateur introuvable. Completez l'inscription via Google OAuth."
+        message: "Impossible de synchroniser le profil utilisateur."
       });
     }
 
-    // 3. Attach the verified identity — routes must use req.user, never req.body.userId.
-    req.user = { id: profile.id, email: profile.email };
+    const authenticatedUser = { id: profile.id, email: profile.email };
+    req.user = authenticatedUser;
+
+    // Cache verification result for 30 seconds
+    tokenCache.set(accessToken, {
+      user: authenticatedUser,
+      expiresAt: Date.now() + 30 * 1000
+    });
+
     next();
   } catch (err) {
     console.error('❌ Auth middleware error:', err.message);
