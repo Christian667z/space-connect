@@ -22,7 +22,7 @@
   --accent-green: #FF1E27;
 
   --text-main: #FFFFFF;
-  --text-muted: #A89AA0;
+  --text-muted: #D4D4D8;
   --text-dim: #5E4E54;
 
   --border-card: rgba(255, 255, 255, 0.08);
@@ -325,16 +325,26 @@ h1, h2, h3, h4 {
   top: 0;
   left: 0;
   right: 0;
-  height: var(--topbar-height);
+  min-height: var(--topbar-height);
+  height: auto;
   background: rgba(3, 2, 5, 0.92);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--border-card);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 0 2.5rem;
   z-index: 100;
+}
+
+/* Header children stay in normal flex flow; no absolutely-positioned item can
+   cover the logo, profile pill, or SaaS action. */
+.navbar > *,
+.navbar .nav-actions > * {
+  position: static;
 }
 
 .nav-brand {
@@ -355,8 +365,11 @@ h1, h2, h3, h4 {
 
 .nav-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 /* ── Navbar: profile pill (authenticated state) ─────────────────────────── */
@@ -442,6 +455,26 @@ h1, h2, h3, h4 {
   background: #1e1e1e !important;
   border-color: rgba(255, 255, 255, 0.28) !important;
   color: #ffffff !important;
+}
+
+/* Directory toolbar actions share one alignment system on every viewport. */
+.directory-action-toolbar,
+.directory-selection-tools,
+.directory-action-buttons {
+  min-width: 0;
+}
+
+.directory-action-buttons {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.directory-selected-count {
+  color: #D4D4D8 !important;
+}
+
+#directory-filter-code {
+  color: #D4D4D8;
 }
 
 /* Pill Badges */
@@ -2542,10 +2575,13 @@ img, svg, canvas, video {
 @media (max-width: 600px) {
   /* Ensure navbar itself never overflows — no absolute-positioned children */
   .navbar {
-    flex-wrap: nowrap;
+    min-height: 64px;
+    height: auto;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
+    padding: 8px 12px;
   }
 
   /* nav-brand: never shrinks, never overflows */
@@ -2559,9 +2595,9 @@ img, svg, canvas, video {
   #nav-auth-container {
     display: flex;
     align-items: center;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 5px !important;
-    max-width: calc(100vw - 155px); /* guarantee logo side always has room */
+    max-width: calc(100vw - 110px);
     overflow: visible; /* no clipping — buttons must stay fully visible */
     flex-shrink: 1;
   }
@@ -2597,6 +2633,30 @@ img, svg, canvas, video {
 
   .nav-saas-label {
     display: none;
+  }
+
+  .directory-action-toolbar {
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+
+  .directory-selection-tools,
+  .directory-action-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .directory-action-buttons {
+    gap: 0.5rem !important;
+  }
+
+  .directory-action-buttons .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-left: 0.65rem !important;
+    padding-right: 0.65rem !important;
+    font-size: 0.72rem !important;
+    white-space: nowrap;
   }
 
   /* FR language button: hide on mobile — SE CONNECTER + REJOINDRE only */
@@ -3145,7 +3205,8 @@ img, svg, canvas, video {
     flex-shrink: 0;
   }
 
-  .dash-bottom-item.active {
+  .dash-bottom-item.active,
+  .dash-bottom-item[aria-current="page"] {
     color: var(--accent-red-bright);   /* app primary red */
   }
 
