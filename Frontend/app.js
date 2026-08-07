@@ -1042,15 +1042,65 @@ function initDashboardTabs() {
     });
   });
 
-  document.querySelectorAll('.mobile-nav-item[data-tab]').forEach(item => {
+  document.querySelectorAll('.mobile-nav-item[data-tab], .mobile-nav-more-item[data-tab]').forEach(item => {
     item.addEventListener('click', () => {
       const tabId = item.getAttribute('data-tab');
       switchDashTab(tabId);
     });
   });
+
+  const moreToggle = document.querySelector('.mobile-nav-more-toggle');
+  if (moreToggle) {
+    moreToggle.addEventListener('click', event => {
+      event.stopPropagation();
+      toggleMobileMoreMenu();
+    });
+  }
+
+  document.querySelectorAll('.mobile-nav-more-item[data-action="landing"]').forEach(item => {
+    item.addEventListener('click', () => {
+      closeMobileMoreMenu();
+      switchView('landing');
+    });
+  });
+
+  document.addEventListener('click', event => {
+    const menu = document.getElementById('mobile-nav-more-menu');
+    const toggle = document.querySelector('.mobile-nav-more-toggle');
+    if (menu && !menu.hidden && !menu.contains(event.target) && toggle && !toggle.contains(event.target)) {
+      closeMobileMoreMenu();
+    }
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeMobileMoreMenu();
+  });
+}
+
+function toggleMobileMoreMenu() {
+  const menu = document.getElementById('mobile-nav-more-menu');
+  const toggle = document.querySelector('.mobile-nav-more-toggle');
+  if (!menu || !toggle) return;
+
+  const willOpen = menu.hidden;
+  menu.hidden = !willOpen;
+  toggle.setAttribute('aria-expanded', String(willOpen));
+  toggle.classList.toggle('is-open', willOpen);
+}
+
+function closeMobileMoreMenu() {
+  const menu = document.getElementById('mobile-nav-more-menu');
+  const toggle = document.querySelector('.mobile-nav-more-toggle');
+  if (menu) menu.hidden = true;
+  if (toggle) {
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.classList.remove('is-open');
+  }
 }
 
 function switchDashTab(tabId) {
+  closeMobileMoreMenu();
+
   // Update sidebar active status
   document.querySelectorAll('.dash-nav-item[data-tab]').forEach(item => {
     if (item.getAttribute('data-tab') === tabId) {
@@ -1069,6 +1119,20 @@ function switchDashTab(tabId) {
 
   // Keep the compact mobile navigation in sync with the desktop sidebar.
   document.querySelectorAll('.mobile-nav-item[data-tab]').forEach(item => {
+    const isActive = item.getAttribute('data-tab') === tabId;
+    item.classList.toggle('active', isActive);
+    item.setAttribute('aria-current', isActive ? 'page' : 'false');
+  });
+
+  const moreTabIds = ['contacts', 'reports', 'account'];
+  const moreToggle = document.querySelector('.mobile-nav-more-toggle');
+  if (moreToggle) {
+    const isMoreTab = moreTabIds.includes(tabId);
+    moreToggle.classList.toggle('active', isMoreTab);
+    moreToggle.setAttribute('aria-current', isMoreTab ? 'page' : 'false');
+  }
+
+  document.querySelectorAll('.mobile-nav-more-item[data-tab]').forEach(item => {
     const isActive = item.getAttribute('data-tab') === tabId;
     item.classList.toggle('active', isActive);
     item.setAttribute('aria-current', isActive ? 'page' : 'false');
