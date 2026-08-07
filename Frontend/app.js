@@ -1017,12 +1017,12 @@ function updateAuthUI() {
 
   } else {
     authNav.innerHTML = `
-      <button class="btn btn-dark" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;"><i class="fa-solid fa-language" style="color: var(--accent-red-bright);"></i> FR <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i></button>
+      <button class="btn btn-dark nav-language" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;"><i class="fa-solid fa-language" style="color: var(--accent-red-bright);"></i> FR <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i></button>
       <a href="#social-section" class="btn btn-dark" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;"><i class="fa-solid fa-share-nodes" style="color: var(--accent-red-bright);"></i> RÉSEAUX</a>
       <a href="privacy.html" class="btn btn-dark" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;"><i class="fa-solid fa-user-shield" style="color: var(--accent-red-bright);"></i> CONFIDENTIALITÉ</a>
       <a href="terms.html" class="btn btn-dark" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;"><i class="fa-solid fa-scale-balanced" style="color: var(--accent-red-bright);"></i> CGU</a>
-      <button class="btn btn-dark btn-google-login">SE CONNECTER</button>
-      <button class="btn btn-red btn-google-login">REJOINDRE</button>
+      <button class="btn btn-dark btn-google-login nav-login">SE CONNECTER</button>
+      <button class="btn btn-red btn-google-login nav-join">REJOINDRE</button>
     `;
     if (unauthNotice) unauthNotice.style.display = 'block';
     if (authContent) authContent.style.display = 'none';

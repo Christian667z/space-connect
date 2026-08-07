@@ -2917,13 +2917,17 @@ img, svg, canvas, video {
    ========================================================================== */
 @media (max-width: 600px) {
   .navbar {
-    padding: 0.4rem 0.85rem;
-    min-height: 56px;
-    gap: 6px;
+    display: flex;
+    align-items: center;
     justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 0;
+    padding: 0.35rem 0.65rem;
+    min-height: 52px;
   }
 
   .nav-brand {
+    min-width: 0;
     font-size: 0.95rem;
     gap: 0.35rem;
   }
@@ -2934,18 +2938,26 @@ img, svg, canvas, video {
   }
 
   .nav-actions {
-    gap: 6px;
+    min-width: 0;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: 0;
     justify-content: flex-end;
   }
 
-  .nav-actions .btn {
-    padding: 0.35rem 0.7rem;
-    font-size: 0.75rem;
+  .nav-actions .nav-language,
+  .nav-actions .nav-login,
+  .nav-actions > a {
+    display: none !important;
   }
 
-  /* Hide auxiliary navigation buttons on mobile to prevent clutter */
-  .nav-actions a.btn-dark:not(#nav-brand-btn) {
-    display: none;
+  .nav-actions .nav-join {
+    display: inline-flex !important;
+    flex: 0 0 auto;
+    padding: 0.42rem 0.72rem !important;
+    font-size: 0.68rem !important;
+    line-height: 1;
+    white-space: nowrap;
   }
 
   /* Hide username text on mobile screens to preserve space and display avatar only */
@@ -2957,6 +2969,93 @@ img, svg, canvas, video {
     padding: 0.2rem;
     background: transparent;
     border: none;
+  }
+
+  .footer-main {
+    padding: 2.25rem 0 1rem;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .footer-col-brand {
+    grid-column: 1 / -1;
+  }
+
+  .footer-brand-logo {
+    margin-bottom: 0.65rem;
+    font-size: 1.15rem;
+  }
+
+  .footer-brand-logo img {
+    width: 28px;
+    height: 28px;
+  }
+
+  .footer-brand-desc {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    margin-bottom: 0.9rem;
+    font-size: 0.8rem;
+    line-height: 1.45;
+  }
+
+  .developer-credit-box {
+    padding: 0.8rem 0.9rem;
+    border-radius: 14px;
+  }
+
+  .dev-name {
+    font-size: 0.95rem;
+  }
+
+  .dev-role {
+    font-size: 0.7rem;
+  }
+
+  .footer-col-title {
+    margin-bottom: 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .footer-link-list {
+    gap: 0.5rem;
+  }
+
+  .footer-link-list a {
+    font-size: 0.72rem;
+    line-height: 1.35;
+  }
+
+  .footer-feature-badges {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+  }
+
+  .footer-mini-tag {
+    padding: 0.35rem 0.45rem;
+    font-size: 0.65rem;
+    line-height: 1.25;
+  }
+
+  .footer-bottom-bar {
+    align-items: center;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding-top: 1rem;
+    text-align: center;
+    font-size: 0.7rem;
+  }
+
+  .footer-bottom-bar > div:nth-child(2) {
+    gap: 0.6rem !important;
+    font-size: 0.7rem !important;
   }
 }
 
