@@ -12,6 +12,49 @@ const { decrypt }                     = require('../utils/crypto');
 const { formatOgName }                = require('../utils/format');
 
 /**
+ * @route   GET /api/contacts/public-directory
+ * @desc    Fetch real public community members directory list (for live directory cards)
+ * @access  Public
+ */
+router.get('/public-directory', async (req, res) => {
+  try {
+    const { data: contacts, error } = await supabase
+      .from('contacts')
+      .select('id, full_name, phone_number, country_code, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+
+    const formattedContacts = (contacts || []).map(c => {
+      const name = formatOgName(c.full_name);
+      // Mask phone number for public view if not full auth (e.g. +509 35***037)
+      const phoneStr = c.phone_number || '';
+      const maskedPhone = phoneStr.length > 4 
+        ? `${phoneStr.slice(0, 2)}***${phoneStr.slice(-3)}`
+        : phoneStr;
+      return {
+        id: c.id,
+        full_name: name,
+        phone_number: c.phone_number,
+        masked_phone: maskedPhone,
+        country_code: c.country_code || '+509',
+        created_at: c.created_at
+      };
+    });
+
+    res.json({
+      success  : true,
+      count    : formattedContacts.length,
+      contacts : formattedContacts
+    });
+  } catch (error) {
+    console.error('❌ Public directory fetch error:', error.message);
+    res.json({ success: true, count: 0, contacts: [] });
+  }
+});
+
+/**
  * @route   GET /api/contacts  |  GET /api/contacts/list
  * @desc    Fetch all community directory contacts
  * @access  Authenticated — members only (phone numbers are personal data)

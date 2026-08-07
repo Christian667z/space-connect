@@ -10,11 +10,8 @@ const appState = {
   currentUser: null,
   googleAccessToken: null,
   supabaseUserId: null,   // set after first successful backend call; used for server-side token refresh
-  membersCount: 2,
-  members: [
-    { name: "OG Asta | Développeur", time: "29 M", country: "HT +509", avatar: "UN" },
-    { name: "OG Space Member", time: "22H", country: "US +1", avatar: "S" }
-  ]
+  membersCount: 0,
+  members: []
 };
 
 /**
@@ -46,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // GIS is loaded with async/defer and may not exist at DOMContentLoaded.
   waitForGoogleIdentityServices();
   fetchLiveStats();             // ← real network stats on every page load
+  fetchCommunityDirectory();    // ← real member directory cards on load
 
   // Handle redirect-based OAuth callback (mobile flow).
   // After Google redirects back to /?auth=success&user_id=...,
@@ -221,14 +219,73 @@ async function fetchLiveStats() {
                   <p>${label}</p>
                 </div>
               </div>
-              <div class="member-country-tag">${meta.code} ${m.country_code}</div>
             </div>`;
         }).join('');
       }
     }
+    // Trigger real directory cards update
+    fetchCommunityDirectory();
   } catch (err) {
     // Silently fail — stats are non-critical, static fallback stays visible
     console.warn('Stats fetch failed:', err.message);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Live Community User Directory Cards Rendering
+   Fetches /api/contacts/public-directory and populates #directory-grid-container
+   -------------------------------------------------------------------------- */
+async function fetchCommunityDirectory() {
+  const container = document.getElementById('directory-grid-container');
+  if (!container) return;
+
+  try {
+    const res  = await fetch('/api/contacts/public-directory');
+    const data = await res.json();
+    if (!data.success || !data.contacts) return;
+
+    appState.members = data.contacts.map(c => ({
+      id: c.id,
+      name: formatOgName(c.full_name),
+      phone: c.phone_number || c.masked_phone,
+      maskedPhone: c.masked_phone,
+      countryCode: c.country_code || '+509',
+      createdAt: c.created_at
+    }));
+
+    if (data.contacts.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+          <i class="fa-solid fa-users-slash" style="font-size: 2.2rem; margin-bottom: 1rem; display: block; color: var(--accent-red-bright);"></i>
+          <h3 style="font-size: 1.1rem; font-weight: 800; color: #fff;">Aucun membre dans l'annuaire</h3>
+          <p style="font-size: 0.85rem; margin-top: 0.3rem;">Soyez le premier à enregistrer votre numéro !</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = data.contacts.map(c => {
+      const name = formatOgName(c.full_name);
+      const initial = name.replace(/^OG\s*/i, '').charAt(0).toUpperCase() || 'O';
+      const meta = getCountryMeta(c.country_code);
+      const phoneDisplay = c.masked_phone || c.phone_number;
+      return `
+        <div class="card-panel directory-user-card" style="padding: 1.25rem; position: relative; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem;">
+              <div class="member-avatar" style="width: 42px; height: 42px; font-size: 1.1rem; font-weight: 800; background: linear-gradient(135deg, rgba(229,9,20,0.25), rgba(139,0,0,0.35)); border: 1px solid rgba(229,9,20,0.4); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff;">${initial}</div>
+              <span class="stream-country-badge" style="padding: 0.25rem 0.6rem; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-card); font-size: 0.75rem; font-weight: 700;">${meta.code} ${c.country_code}</span>
+            </div>
+            <h4 style="font-size: 0.975rem; font-weight: 800; color: #fff; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</h4>
+            <p style="font-size: 0.825rem; color: var(--text-muted); font-family: monospace;"><i class="fa-brands fa-whatsapp text-red" style="margin-right: 0.35rem;"></i>${phoneDisplay}</p>
+          </div>
+          <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 0.725rem; color: var(--accent-red-bright); font-weight: 700;">● Membre Actif</span>
+            <i class="fa-solid fa-circle-check" style="color: #10B981; font-size: 0.85rem;"></i>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    console.warn('Directory fetch error:', err.message);
   }
 }
 
