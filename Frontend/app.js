@@ -1041,6 +1041,13 @@ function initDashboardTabs() {
       switchDashTab(tabId);
     });
   });
+
+  document.querySelectorAll('.mobile-nav-item[data-tab]').forEach(item => {
+    item.addEventListener('click', () => {
+      const tabId = item.getAttribute('data-tab');
+      switchDashTab(tabId);
+    });
+  });
 }
 
 function switchDashTab(tabId) {
@@ -1058,6 +1065,13 @@ function switchDashTab(tabId) {
       const dot = item.querySelector('.active-dot');
       if (dot) dot.remove();
     }
+  });
+
+  // Keep the compact mobile navigation in sync with the desktop sidebar.
+  document.querySelectorAll('.mobile-nav-item[data-tab]').forEach(item => {
+    const isActive = item.getAttribute('data-tab') === tabId;
+    item.classList.toggle('active', isActive);
+    item.setAttribute('aria-current', isActive ? 'page' : 'false');
   });
 
   // Switch visible tab pane
